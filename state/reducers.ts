@@ -1,4 +1,3 @@
-import { Reducer } from "react";
 import { OrganGlobalState } from "./context";
 
 type Actions = {

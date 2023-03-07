@@ -8,6 +8,9 @@ dayjs.extend(customParseFormat);
 export const GCAL_DATETIME_FORMAT = "YYYYMMDDTHHmmssZ";
 export const GCAL_DATE_FORMAT = "YYYYMMDD";
 
+export const DATETIME_PRINT_FORMAT = "HH:mm, DD MMMM YYYY";
+export const DATE_PRINT_FORMAT = "DD MMMM YYYY";
+
 export type GDate =
   | string
   | {
@@ -59,4 +62,31 @@ export function dateSort(a: GDate, b: GDate): number {
   }
 
   return Number.parseInt(aString) - Number.parseInt(bString);
+}
+
+export function printDate(date: DateOrDateTime) {
+  return date.type === "DATETIME"
+    ? date.value.format(DATETIME_PRINT_FORMAT)
+    : date.value.format(DATE_PRINT_FORMAT);
+}
+
+class IcalDate {
+  type: "DATE" | "DATETIME";
+  value: dayjs.Dayjs;
+
+  constructor(dateTime: GDate) {
+    if (typeof dateTime === "string") {
+      this.type = "DATETIME";
+      this.value = dayjs(dateTime, GCAL_DATETIME_FORMAT);
+    } else {
+      this.type = "DATE";
+      this.value = dayjs(dateTime.__value__, GCAL_DATE_FORMAT);
+    }
+  }
+
+  print() {
+    return this.type === "DATETIME"
+      ? this.value.format(DATETIME_PRINT_FORMAT)
+      : this.value.format(DATE_PRINT_FORMAT);
+  }
 }

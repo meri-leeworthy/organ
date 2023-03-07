@@ -1,7 +1,7 @@
 import { FlatList, Pressable, StyleSheet } from "react-native";
 import { Text } from "../components/Themed";
 import { RootTabScreenProps } from "../types";
-import { IcalEvent, dateSort } from "../lib/parseIcal";
+import { IcalEvent, dateSort } from "../lib/ical";
 import ListEvent from "../components/ListEvent";
 import { TreeType } from "icalts/dist/src/types";
 import { useStateValue } from "../state/context";
@@ -17,6 +17,7 @@ export default function EventsScreen({
       onPress={() =>
         navigation.navigate("Event", {
           eventName: (vevent as IcalEvent).SUMMARY,
+          uid: (vevent as IcalEvent).UID,
         })
       }>
       <ListEvent vevent={vevent as IcalEvent} />

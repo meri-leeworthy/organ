@@ -1,6 +1,12 @@
 import { StyleSheet } from "react-native";
 import { Text, View } from "../components/Themed";
-import { parseIcal, parseDate, IcalEvent } from "../lib/parseIcal";
+import {
+  parseDate,
+  IcalEvent,
+  DATETIME_PRINT_FORMAT,
+  DATE_PRINT_FORMAT,
+  printDate,
+} from "../lib/ical";
 import dayjs from "dayjs";
 
 export default function ListEvent({ vevent }: { vevent: IcalEvent }) {
@@ -10,11 +16,7 @@ export default function ListEvent({ vevent }: { vevent: IcalEvent }) {
   return (
     <View style={styles.event}>
       <Text>{vevent.SUMMARY}</Text>
-      <Text>
-        {dtStart.type === "DATETIME"
-          ? dtStart.value.format("HH:mm, DD MMMM YYYY")
-          : dtStart.value.format("DD MMMM YYYY")}
-      </Text>
+      <Text>{printDate(dtStart)}</Text>
     </View>
   );
 }
