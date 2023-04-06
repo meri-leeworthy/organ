@@ -16,10 +16,10 @@ import { ColorSchemeName, Pressable } from "react-native";
 
 import Colors from "../constants/Colors";
 import useColorScheme from "../hooks/useColorScheme";
-import ModalScreen from "../screens/ModalScreen";
+import LoginScreen from "../screens/LoginScreen";
 import NotFoundScreen from "../screens/NotFoundScreen";
 import EventsScreen from "../screens/EventsScreen";
-import TabTwoScreen from "../screens/TabTwoScreen";
+import SettingsScreen from "../screens/SettingsScreen";
 import {
   RootStackParamList,
   RootTabParamList,
@@ -31,13 +31,19 @@ import { StateProvider } from "../state/context";
 import { reducer } from "../state/reducers";
 import { parsedIcal } from "../state/fileSample";
 
+console.log(parsedIcal);
+
 export default function Navigation({
   colorScheme,
 }: {
   colorScheme: ColorSchemeName;
 }) {
   return (
-    <StateProvider reducer={reducer} initialState={{ calendars: parsedIcal }}>
+    <StateProvider
+      reducer={reducer}
+      initialState={{
+        calendars: parsedIcal,
+      }}>
       <NavigationContainer
         linking={LinkingConfiguration}
         theme={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
@@ -67,7 +73,7 @@ function RootNavigator() {
         options={{ title: "Oops!" }}
       />
       <Stack.Group screenOptions={{ presentation: "modal" }}>
-        <Stack.Screen name="Modal" component={ModalScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} />
       </Stack.Group>
       <Stack.Screen
         name="Event"
@@ -103,7 +109,7 @@ function BottomTabNavigator() {
           ),
           headerRight: () => (
             <Pressable
-              onPress={() => navigation.navigate("Modal")}
+              onPress={() => navigation.navigate("Login")}
               style={({ pressed }) => ({
                 opacity: pressed ? 0.5 : 1,
               })}>
@@ -118,11 +124,11 @@ function BottomTabNavigator() {
         })}
       />
       <BottomTab.Screen
-        name="TabTwo"
-        component={TabTwoScreen}
+        name="Settings"
+        component={SettingsScreen}
         options={{
-          title: "Tab Two",
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          title: "Settings",
+          tabBarIcon: ({ color }) => <TabBarIcon name="gear" color={color} />,
         }}
       />
     </BottomTab.Navigator>

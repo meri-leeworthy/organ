@@ -1,8 +1,13 @@
 import { TreeType } from "icalts/dist/src/types";
 import React, { createContext, Reducer, useContext, useReducer } from "react";
 
+export type LinkedCalendar = {
+  calendar: TreeType;
+  url: string;
+};
+
 export type OrganGlobalState = {
-  calendars: TreeType[];
+  calendars: LinkedCalendar[];
 };
 
 export const StateContext = createContext<

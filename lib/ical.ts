@@ -41,7 +41,7 @@ export function parseDate(dateTime: GDate): DateOrDateTime {
 }
 
 export function parseIcal(sample: string) {
-  const ical = lines2tree(sample.split("\n"));
+  const ical = lines2tree(sample.split("\n").map(line => line.trim()));
 
   if (
     "VCALENDAR" in ical &&

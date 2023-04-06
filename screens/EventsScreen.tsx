@@ -10,7 +10,7 @@ export default function EventsScreen({
   navigation,
 }: RootTabScreenProps<"Events">) {
   const [{ calendars }, dispatch] = useStateValue();
-  const cal = calendars[0];
+  const cal = calendars[0].calendar; //currently takes TODO: merge all calendars
 
   const Item = (vevent: TreeType) => (
     <Pressable
