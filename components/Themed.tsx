@@ -3,10 +3,15 @@
  * https://docs.expo.io/guides/color-schemes/
  */
 
-import { Text as DefaultText, View as DefaultView } from 'react-native';
+import {
+  Text as DefaultText,
+  View as DefaultView,
+  TextInput as DefaultTextInput,
+} from "react-native";
 
-import Colors from '../constants/Colors';
-import useColorScheme from '../hooks/useColorScheme';
+import Colors from "../constants/Colors";
+import useColorScheme from "../hooks/useColorScheme";
+import { StyleSheet } from "react-native";
 
 export function useThemeColor(
   props: { light?: string; dark?: string },
@@ -27,19 +32,51 @@ type ThemeProps = {
   darkColor?: string;
 };
 
-export type TextProps = ThemeProps & DefaultText['props'];
-export type ViewProps = ThemeProps & DefaultView['props'];
+export type TextProps = ThemeProps & DefaultText["props"];
+export type ViewProps = ThemeProps & DefaultView["props"];
+export type TextInputProps = ThemeProps & DefaultTextInput["props"];
 
 export function Text(props: TextProps) {
   const { style, lightColor, darkColor, ...otherProps } = props;
-  const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  const color = useThemeColor({ light: lightColor, dark: darkColor }, "text");
 
   return <DefaultText style={[{ color }, style]} {...otherProps} />;
 }
 
 export function View(props: ViewProps) {
   const { style, lightColor, darkColor, ...otherProps } = props;
-  const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'background');
+  const backgroundColor = useThemeColor(
+    { light: lightColor, dark: darkColor },
+    "background"
+  );
 
   return <DefaultView style={[{ backgroundColor }, style]} {...otherProps} />;
 }
+
+export function TextInput(props: TextInputProps) {
+  const { style, lightColor, darkColor, ...otherProps } = props;
+  const color = useThemeColor({ light: lightColor, dark: darkColor }, "text");
+  const backgroundColor = useThemeColor(
+    { light: lightColor, dark: darkColor },
+    "background"
+  );
+
+  return (
+    <DefaultTextInput
+      style={[{ color, backgroundColor }, styles.input, style]}
+      {...otherProps}
+      placeholderTextColor={"#aaa"}
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+  input: {
+    height: 40,
+    borderColor: "pink",
+    padding: 8,
+    borderRadius: 4,
+    marginTop: 12,
+    borderWidth: 1,
+  },
+});

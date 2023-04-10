@@ -1,5 +1,5 @@
-import { Text, View } from "../components/Themed";
-import { StyleSheet, TextInput, Button } from "react-native";
+import { Text, View, TextInput } from "../components/Themed";
+import { StyleSheet, Button } from "react-native";
 import { useState, useEffect } from "react";
 import { useStateValue } from "../state/context";
 import { parseIcal } from "../lib/ical";
@@ -25,12 +25,7 @@ export default function SettingsScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Add Calendar</Text>
-      <TextInput
-        style={styles.input}
-        onChangeText={setUrl}
-        value={url}
-        placeholder="Enter URL"
-      />
+      <TextInput onChangeText={setUrl} value={url} placeholder="Enter URL" />
       <Button
         title="Add"
         onPress={() => {
@@ -60,10 +55,5 @@ const styles = StyleSheet.create({
     marginVertical: 30,
     height: 1,
     width: "80%",
-  },
-  input: {
-    height: 40,
-    marginTop: 12,
-    borderWidth: 1,
   },
 });
