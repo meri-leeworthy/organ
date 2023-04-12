@@ -5,12 +5,65 @@ import { IcalEvent, dateSort } from "../lib/ical";
 import ListEvent from "../components/ListEvent";
 import { TreeType } from "icalts/dist/src/types";
 import { useStateValue } from "../state/context";
+import useMatrixClient from "../lib/useMatrixClient";
+import { useEffect, useState } from "react";
+import { useRetry } from "../lib/useRetry";
+
+// general goal: display a list of events that combines ical feeds and matrix rooms
+// matrix rooms represent the equivalent of calendars: event data may be stored
+// in event-type messages in the room, and the room name may be used as the
+// calendar name.
+
+// only certain rooms should be included as 'calendar rooms' - this should be
+// configurable by the user.  The user should be able to add and remove rooms
+// from the list of calendar rooms.
 
 export default function EventsScreen({
   navigation,
 }: RootTabScreenProps<"Events">) {
   const [{ calendars }, dispatch] = useStateValue();
-  const cal = calendars[0].calendar; //currently takes TODO: merge all calendars
+  const { client, setClient } = useMatrixClient();
+  const attemptCount = useRetry(2);
+
+  useEffect(() => {
+    if (!client) return;
+    const unsubscribe = navigation.addListener("focus", () => {
+      console.log("EventsScreen was focused");
+    });
+
+    if (!client.isLoggedIn()) return;
+
+    console.log(`Logged in as ${client.getUserId()}`);
+
+    client.on(
+      // @ts-ignore
+      "Room.timeline",
+      function (event: any, room: any, toStartOfTimeline: any) {
+        if (toStartOfTimeline) {
+          return; // don't print paginated results
+        }
+        if (event.getType() !== "m.room.message") {
+          return; // only print messages
+        }
+        console.log(
+          // the room name will update with m.room.name events automatically
+          "(%s) %s :: %s",
+          room.name,
+          event.getSender(),
+          event.getContent().body
+        );
+      }
+    );
+
+    client.startClient();
+
+    return () => {
+      client.stopClient();
+      unsubscribe();
+    };
+  }, [navigation, client, attemptCount]);
+
+  const cal = calendars[0].calendar; //TODO: merge all calendars
 
   const Item = (vevent: TreeType) => (
     <Pressable

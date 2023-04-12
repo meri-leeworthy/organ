@@ -43,6 +43,7 @@ export default function Navigation({
       reducer={reducer}
       initialState={{
         calendars: parsedIcal,
+        client: undefined,
       }}>
       <NavigationContainer
         linking={LinkingConfiguration}
@@ -114,7 +115,7 @@ function BottomTabNavigator() {
                 opacity: pressed ? 0.5 : 1,
               })}>
               <FontAwesome
-                name="info-circle"
+                name="user-circle"
                 size={25}
                 color={Colors[colorScheme].text}
                 style={{ marginRight: 15 }}

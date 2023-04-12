@@ -1,67 +1,46 @@
 import { StatusBar } from "expo-status-bar";
 import { Button, Platform, StyleSheet } from "react-native";
 import { Text, TextInput, View } from "../components/Themed";
-import { useState, useEffect, useMemo } from "react";
-import * as sdk from "matrix-js-sdk";
-
-global.fetch = fetch;
+import { useEffect, useState } from "react";
+import useMatrixClient from "../lib/useMatrixClient";
+import * as SecureStore from "expo-secure-store";
+import { useNavigation } from "@react-navigation/native";
 
 export default function LoginScreen() {
   const [homeserver, setHomeserver] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const { client, setClient } = useMatrixClient();
+  const navigation = useNavigation();
 
-  const client = useMemo(
-    () =>
-      sdk.createClient({
-        baseUrl: "https://matrix.org",
-        // fetchFn: (req, args) => {
-        //   const url =
-        //     typeof req === "string" ? req : "url" in req ? req.url : req.href;
-        //   const noqueries = url.split("?")[0];
-        //   return fetch(noqueries, args);
-        // },
-      }),
-    []
-  );
+  // question: if I login on a client then use useMatrixClient to get a client
+  // on another screen, will it be logged in?
 
-  client.on(
-    // @ts-ignore
-    "Room.timeline",
-    function (event: any, room: any, toStartOfTimeline: any) {
-      if (toStartOfTimeline) {
-        return; // don't print paginated results
-      }
-      if (event.getType() !== "m.room.message") {
-        return; // only print messages
-      }
-      console.log(
-        // the room name will update with m.room.name events automatically
-        "(%s) %s :: %s",
-        room.name,
-        event.getSender(),
-        event.getContent().body
-      );
-    }
-  );
-
-  client.startClient();
+  if (!client) return <Text>loading...</Text>;
 
   const handleLogin = async () => {
-    // const response = await client.whoami();
-    client
-      .login("m.login.password", {
+    const loginflows = await client.loginFlows();
+    console.log(loginflows);
+
+    try {
+      const response = await client.login("m.login.password", {
         user: username,
         password: password,
-        refresh_token: true,
-      })
-      .then(response => {
-        console.log(response);
+        // refresh_token: true,
       });
-    // console.log(response);
-    // client.loginFlows().then(response => {
-    //   console.log(response);
-    // });
+      console.log(response);
+
+      await SecureStore.setItemAsync("accessToken", response.access_token);
+      console.log("access token saved");
+
+      // await SecureStore.setItemAsync("refreshToken", response.refresh_token);
+      // console.log("refresh token saved");
+
+      setClient(client);
+      navigation.goBack();
+    } catch (error) {
+      console.error("login didn't work!", error);
+    }
   };
 
   return (
@@ -82,6 +61,7 @@ export default function LoginScreen() {
       <Text style={styles.label}>Password</Text>
       <TextInput
         onChangeText={setPassword}
+        secureTextEntry={true}
         value={password}
         placeholder="********"
       />

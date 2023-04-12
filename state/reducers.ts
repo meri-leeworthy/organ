@@ -1,7 +1,8 @@
 import { TreeType } from "icalts/dist/src/types";
 import { OrganGlobalState } from "./context";
+import { MatrixClient } from "matrix-js-sdk";
 
-type Action = AddCalendarAction;
+type Action = AddCalendarAction | SetClientAction;
 
 type AddCalendarAction = {
   type: "ADD_CALENDAR";
@@ -9,12 +10,17 @@ type AddCalendarAction = {
   calendar: TreeType;
 };
 
+type SetClientAction = {
+  type: "SET_CLIENT";
+  client: MatrixClient;
+};
+
 export function reducer(state: OrganGlobalState, action: Action) {
   switch (action.type) {
     case "ADD_CALENDAR":
       console.log(`Adding calendar ${action.url}`);
       return {
-        ...state, //nothing currently
+        ...state,
         calendars: [
           ...state.calendars,
           {
@@ -22,6 +28,12 @@ export function reducer(state: OrganGlobalState, action: Action) {
             url: action.url,
           },
         ],
+      };
+    case "SET_CLIENT":
+      console.log(`useReducer: Setting client`);
+      return {
+        ...state,
+        client: action.client,
       };
     default:
       return state;

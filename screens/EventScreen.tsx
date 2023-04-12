@@ -8,7 +8,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Event">;
 
 export default function EventScreen(props: Props) {
   const [{ calendars }, dispatch] = useStateValue();
-  const cal = calendars[0];
+  const cal = calendars[0].calendar;
 
   if (!("VEVENT" in cal) || !Array.isArray(cal.VEVENT))
     throw new Error("Event Not Found");
