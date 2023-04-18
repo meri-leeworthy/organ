@@ -67,9 +67,9 @@ export default function EventsScreen({
     client?.getRooms().forEach(room => {
       console.log(room.name, room.roomId);
       dispatch({
-        type: "ADD_ICALENDAR",
-        url: room.roomId,
-        calendar: {},
+        type: "ADD_MATRIX_CALENDAR",
+        roomId: room.roomId,
+        events: [],
       });
     });
   }, [attemptCount]);
