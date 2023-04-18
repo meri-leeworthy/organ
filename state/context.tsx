@@ -3,6 +3,7 @@ import * as sdk from "matrix-js-sdk";
 import React, { createContext, Reducer, useContext, useReducer } from "react";
 
 import * as SecureStore from "expo-secure-store";
+import { Action } from "./reducers";
 
 export async function getClient() {
   const accessToken = await SecureStore.getItemAsync("accessToken");
@@ -25,7 +26,7 @@ export type OrganGlobalState = {
 };
 
 export const StateContext = createContext<
-  [OrganGlobalState, React.Dispatch<any>]
+  [OrganGlobalState, React.Dispatch<Action>]
 >([{ calendars: [], client: undefined }, () => null]);
 
 export const StateProvider = ({
@@ -33,7 +34,7 @@ export const StateProvider = ({
   initialState,
   children,
 }: {
-  reducer: Reducer<OrganGlobalState, any>;
+  reducer: Reducer<OrganGlobalState, Action>;
   initialState: OrganGlobalState;
   children: React.ReactElement;
 }) => (

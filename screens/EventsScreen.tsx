@@ -23,7 +23,7 @@ export default function EventsScreen({
 }: RootTabScreenProps<"Events">) {
   const [{ calendars }, dispatch] = useStateValue();
   const { client, setClient } = useMatrixClient();
-  const attemptCount = useRetry(2);
+  const attemptCount = useRetry(6);
 
   useEffect(() => {
     if (!client) return;
@@ -61,7 +61,18 @@ export default function EventsScreen({
       client.stopClient();
       unsubscribe();
     };
-  }, [navigation, client, attemptCount]);
+  }, [navigation, client]);
+
+  useEffect(() => {
+    client?.getRooms().forEach(room => {
+      console.log(room.name, room.roomId);
+      dispatch({
+        type: "ADD_ICALENDAR",
+        url: room.roomId,
+        calendar: {},
+      });
+    });
+  }, [attemptCount]);
 
   const cal = calendars[0].calendar; //TODO: merge all calendars
 

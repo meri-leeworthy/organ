@@ -16,7 +16,7 @@ export default function SettingsScreen() {
     fetch(url)
       .then(response => response.text())
       .then(text => {
-        dispatch({ type: "ADD_CALENDAR", url, calendar: parseIcal(text)[0] });
+        dispatch({ type: "ADD_ICALENDAR", url, calendar: parseIcal(text)[0] });
         setLoading(false);
       })
       .catch(error => setError(error));
