@@ -1,34 +1,11 @@
-import { TreeType } from "icalts/dist/src/types";
-import { OrganGlobalState } from "./context";
-import { MatrixClient } from "matrix-js-sdk";
+import { ICalendar, OrganGlobalState, Action } from "../types";
+import { Reducer } from "react";
 
-export type Action =
-  | AddICalendarAction
-  | SetClientAction
-  | AddMatrixCalendarAction;
-
-type AddICalendarAction = {
-  type: "ADD_ICALENDAR";
-  url: string;
-  calendar: TreeType;
-};
-
-type AddMatrixCalendarAction = {
-  type: "ADD_MATRIX_CALENDAR";
-  roomId: string;
-  events: any[];
-};
-
-type SetClientAction = {
-  type: "SET_CLIENT";
-  client: MatrixClient;
-};
-
-export function reducer(state: OrganGlobalState, action: Action) {
+export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
   switch (action.type) {
     case "ADD_ICALENDAR":
       console.log(`Adding calendar ${action.url}`);
-      if (state.calendars.some(c => c.url === action.url)) {
+      if (state.calendars.some(c => "url" in c && c.url === action.url)) {
         console.log(`Calendar already exists`);
         return state;
       }
@@ -39,12 +16,15 @@ export function reducer(state: OrganGlobalState, action: Action) {
           {
             calendar: action.calendar,
             url: action.url,
+            name: action.name,
           },
         ],
       };
     case "ADD_MATRIX_CALENDAR":
       console.log(`Adding calendar ${action.roomId}`);
-      if (state.calendars.some(c => c.url === action.roomId)) {
+      if (
+        state.calendars.some(c => "roomId" in c && c.roomId === action.roomId)
+      ) {
         console.log(`Calendar already exists`);
         return state;
       }
@@ -53,10 +33,17 @@ export function reducer(state: OrganGlobalState, action: Action) {
         calendars: [
           ...state.calendars,
           {
-            calendar: action.events,
-            url: action.roomId,
+            events: action.events,
+            roomId: action.roomId,
+            roomName: action.roomName,
           },
         ],
+      };
+    case "SET_MATRIX_ROOMS":
+      console.log(`Setting matrix rooms`);
+      return {
+        ...state,
+        matrixRooms: action.matrixRooms,
       };
     case "SET_CLIENT":
       return {
@@ -66,4 +53,4 @@ export function reducer(state: OrganGlobalState, action: Action) {
     default:
       return state;
   }
-}
+};

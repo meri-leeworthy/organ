@@ -65,7 +65,7 @@ export function TextInput(props: TextInputProps) {
     <DefaultTextInput
       style={[{ color, backgroundColor }, styles.input, style]}
       {...otherProps}
-      placeholderTextColor={"#aaa"}
+      placeholderTextColor={"#999"}
     />
   );
 }
@@ -73,7 +73,7 @@ export function TextInput(props: TextInputProps) {
 const styles = StyleSheet.create({
   input: {
     height: 40,
-    borderColor: "pink",
+    borderColor: "orange",
     padding: 8,
     borderRadius: 4,
     marginTop: 12,

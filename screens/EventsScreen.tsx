@@ -1,13 +1,16 @@
-import { FlatList, Pressable, StyleSheet } from "react-native";
-import { Text } from "../components/Themed";
-import { RootTabScreenProps } from "../types";
+import { FlatList, Pressable, StyleSheet, Button } from "react-native";
+import { Text, View } from "../components/Themed";
+import { RootStackScreenProps } from "../types";
 import { IcalEvent, dateSort } from "../lib/ical";
 import ListEvent from "../components/ListEvent";
 import { TreeType } from "icalts/dist/src/types";
 import { useStateValue } from "../state/context";
-import useMatrixClient from "../lib/useMatrixClient";
+import useMatrixClient from "../hooks/useMatrixClient";
 import { useEffect, useState } from "react";
-import { useRetry } from "../lib/useRetry";
+// import { useRetry } from "../lib/useRetry";
+import { Drawer } from "react-native-drawer-layout";
+import CalendarsScreen from "./CalendarsScreen";
+import { FontAwesome } from "@expo/vector-icons";
 
 // general goal: display a list of events that combines ical feeds and matrix rooms
 // matrix rooms represent the equivalent of calendars: event data may be stored
@@ -19,11 +22,13 @@ import { useRetry } from "../lib/useRetry";
 // from the list of calendar rooms.
 
 export default function EventsScreen({
+  route,
   navigation,
-}: RootTabScreenProps<"Events">) {
-  const [{ calendars }, dispatch] = useStateValue();
-  const { client, setClient } = useMatrixClient();
-  const attemptCount = useRetry(6);
+}: RootStackScreenProps<"Root">) {
+  const [{ calendars }] = useStateValue();
+  const { drawerIsOpen } = route.params;
+  const { client } = useMatrixClient();
+  // const attemptCount = useRetry(6);
 
   useEffect(() => {
     if (!client) return;
@@ -63,18 +68,7 @@ export default function EventsScreen({
     };
   }, [navigation, client]);
 
-  useEffect(() => {
-    client?.getRooms().forEach(room => {
-      console.log(room.name, room.roomId);
-      dispatch({
-        type: "ADD_MATRIX_CALENDAR",
-        roomId: room.roomId,
-        events: [],
-      });
-    });
-  }, [attemptCount]);
-
-  const cal = calendars[0].calendar; //TODO: merge all calendars
+  const cal = "calendar" in calendars[0] ? calendars[0].calendar : []; //TODO: merge all calendars
 
   const Item = (vevent: TreeType) => (
     <Pressable
@@ -89,13 +83,27 @@ export default function EventsScreen({
   );
 
   return "VEVENT" in cal && Array.isArray(cal.VEVENT) ? (
-    <FlatList
-      data={cal.VEVENT.sort((a, b) =>
-        dateSort((a as IcalEvent).DTSTART, (b as IcalEvent).DTSTART)
-      )}
-      renderItem={vevent => <Item {...vevent.item} />}
-      keyExtractor={item => (item as IcalEvent).UID}
-    />
+    <Drawer
+      open={drawerIsOpen}
+      onOpen={() => {
+        // navigation.setParams({ drawerIsOpen: true });
+      }}
+      onClose={() => {
+        // navigation.setParams({ drawerIsOpen: false });
+      }}
+      drawerType="front"
+      renderDrawerContent={() => <CalendarsScreen />}>
+      <FlatList
+        data={cal.VEVENT.sort((a, b) =>
+          dateSort((a as IcalEvent).DTSTART, (b as IcalEvent).DTSTART)
+        )}
+        renderItem={vevent => <Item {...vevent.item} />}
+        keyExtractor={item => (item as IcalEvent).UID}
+      />
+      <View style={styles.fab}>
+        <FontAwesome size={30} name="plus" color="white" />
+      </View>
+    </Drawer>
   ) : (
     <Text>No Events Found</Text>
   );
@@ -107,5 +115,14 @@ const styles = StyleSheet.create({
   container: {
     // flex: 1,
     // overflow: "scroll",
+  },
+  fab: {
+    position: "absolute",
+    bottom: 20,
+    right: 0,
+    borderRadius: 20,
+    margin: 16,
+    backgroundColor: "#3F51B5",
+    padding: 20,
   },
 });

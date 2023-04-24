@@ -1,7 +1,10 @@
 import * as sdk from "matrix-js-sdk";
 import { useStateValue } from "../state/context";
 import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
+import { useRetry } from "./useRetry";
+import { MatrixRoomList } from "../types";
 
 // this hook should return a local client instance and keep it in sync with the global client state
 
@@ -13,6 +16,7 @@ export default function useMatrixClient(): {
   const [localClient, setLocalClient] = useState<sdk.MatrixClient | undefined>(
     client
   );
+  const attemptCount = useRetry(3);
 
   function setClient(newClient: sdk.MatrixClient) {
     console.log("useMatrixClient: setting client");
@@ -22,6 +26,21 @@ export default function useMatrixClient(): {
       client: newClient,
     });
   }
+
+  useEffect(() => {
+    if (!client) return;
+    const rooms = client?.getRooms();
+    const roomIds: MatrixRoomList | undefined = rooms?.map(room => {
+      return { roomId: room.roomId, roomName: room.name };
+    });
+
+    console.log("useMatrixClient roomIds", roomIds);
+
+    if (roomIds) {
+      AsyncStorage.setItem("matrixRooms", JSON.stringify(roomIds)); //could throw
+      dispatch({ type: "SET_MATRIX_ROOMS", matrixRooms: roomIds });
+    }
+  }, [attemptCount]);
 
   useEffect(() => {
     async function setClientWithTokenIfExists() {

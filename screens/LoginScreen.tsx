@@ -2,7 +2,7 @@ import { StatusBar } from "expo-status-bar";
 import { Button, Platform, StyleSheet } from "react-native";
 import { Text, TextInput, View } from "../components/Themed";
 import { useEffect, useState } from "react";
-import useMatrixClient from "../lib/useMatrixClient";
+import useMatrixClient from "../hooks/useMatrixClient";
 import * as SecureStore from "expo-secure-store";
 import { useNavigation } from "@react-navigation/native";
 

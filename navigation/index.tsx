@@ -4,7 +4,6 @@
  *
  */
 import { FontAwesome } from "@expo/vector-icons";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import {
   NavigationContainer,
   DefaultTheme,
@@ -13,17 +12,15 @@ import {
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as React from "react";
 import { ColorSchemeName, Pressable } from "react-native";
-
 import Colors from "../constants/Colors";
 import useColorScheme from "../hooks/useColorScheme";
 import LoginScreen from "../screens/LoginScreen";
 import NotFoundScreen from "../screens/NotFoundScreen";
 import EventsScreen from "../screens/EventsScreen";
-import SettingsScreen from "../screens/SettingsScreen";
 import {
+  MatrixRoomList,
   RootStackParamList,
-  RootTabParamList,
-  RootTabScreenProps,
+  RootStackScreenProps,
 } from "../types";
 import LinkingConfiguration from "./LinkingConfiguration";
 import EventScreen from "../screens/EventScreen";
@@ -34,19 +31,23 @@ import { parsedIcal } from "../state/fileSample";
 console.log(parsedIcal);
 
 export default function Navigation({
+  matrixRooms,
   colorScheme,
 }: {
   colorScheme: ColorSchemeName;
+  matrixRooms: MatrixRoomList;
 }) {
+  console.log("nav index matrixRooms: ", matrixRooms);
   return (
     <StateProvider
       reducer={reducer}
       initialState={{
         calendars: parsedIcal,
         client: undefined,
+        matrixRooms,
       }}>
       <NavigationContainer
-        linking={LinkingConfiguration}
+        // linking={LinkingConfiguration}
         theme={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <RootNavigator />
       </NavigationContainer>
@@ -61,52 +62,32 @@ export default function Navigation({
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function RootNavigator() {
+  const colorScheme = useColorScheme();
   return (
     <Stack.Navigator>
       <Stack.Screen
         name="Root"
-        component={BottomTabNavigator}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="NotFound"
-        component={NotFoundScreen}
-        options={{ title: "Oops!" }}
-      />
-      <Stack.Group screenOptions={{ presentation: "modal" }}>
-        <Stack.Screen name="Login" component={LoginScreen} />
-      </Stack.Group>
-      <Stack.Screen
-        name="Event"
-        component={EventScreen}
-        options={({ route }) => ({ title: route.params.eventName })}
-      />
-    </Stack.Navigator>
-  );
-}
-
-/**
- * A bottom tab navigator displays tab buttons on the bottom of the display to switch screens.
- * https://reactnavigation.org/docs/bottom-tab-navigator
- */
-const BottomTab = createBottomTabNavigator<RootTabParamList>();
-
-function BottomTabNavigator() {
-  const colorScheme = useColorScheme();
-
-  return (
-    <BottomTab.Navigator
-      initialRouteName="Events"
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-      }}>
-      <BottomTab.Screen
-        name="Events"
         component={EventsScreen}
-        options={({ navigation }: RootTabScreenProps<"Events">) => ({
-          title: "Events",
-          tabBarIcon: ({ color }) => (
-            <TabBarIcon name="calendar" color={color} />
+        initialParams={{ drawerIsOpen: false }}
+        options={({ navigation, route }: RootStackScreenProps<"Root">) => ({
+          title: "My Events",
+          headerLeft: () => (
+            <Pressable
+              onPress={() =>
+                navigation.setParams({
+                  drawerIsOpen: !route.params.drawerIsOpen,
+                })
+              }
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.5 : 1,
+              })}>
+              <FontAwesome
+                name="bars"
+                size={25}
+                color={Colors[colorScheme].text}
+                style={{ marginLeft: 15 }}
+              />
+            </Pressable>
           ),
           headerRight: () => (
             <Pressable
@@ -124,15 +105,20 @@ function BottomTabNavigator() {
           ),
         })}
       />
-      <BottomTab.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{
-          title: "Settings",
-          tabBarIcon: ({ color }) => <TabBarIcon name="gear" color={color} />,
-        }}
+      <Stack.Screen
+        name="NotFound"
+        component={NotFoundScreen}
+        options={{ title: "Oops!" }}
       />
-    </BottomTab.Navigator>
+      <Stack.Group screenOptions={{ presentation: "modal" }}>
+        <Stack.Screen name="Login" component={LoginScreen} />
+      </Stack.Group>
+      <Stack.Screen
+        name="Event"
+        component={EventScreen}
+        options={({ route }) => ({ title: route.params.eventName })}
+      />
+    </Stack.Navigator>
   );
 }
 

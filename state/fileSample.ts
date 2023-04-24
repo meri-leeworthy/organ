@@ -1,10 +1,11 @@
 import { sample } from "../assets/data/sample";
 import { parseIcal } from "../lib/ical";
-import { LinkedCalendar } from "./context";
+import { ICalendar } from "../types";
 
-export const parsedIcal: LinkedCalendar[] = parseIcal(sample).map(calendar => {
+export const parsedIcal: ICalendar[] = parseIcal(sample).map(calendar => {
   return {
     calendar: calendar,
-    url: "link_placeholder",
+    url: "placeholder_url",
+    name: "Sample iCalendar",
   };
 });

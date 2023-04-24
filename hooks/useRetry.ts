@@ -12,7 +12,7 @@ export function useRetry(numberOfRetries: number) {
 
     const retryTimer = setTimeout(() => {
       setAttemptCount(attemptCount + 1);
-    }, 1000);
+    }, 15000);
 
     return () => {
       clearTimeout(retryTimer);

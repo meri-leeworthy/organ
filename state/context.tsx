@@ -1,9 +1,8 @@
 import { TreeType } from "icalts/dist/src/types";
 import * as sdk from "matrix-js-sdk";
 import React, { createContext, Reducer, useContext, useReducer } from "react";
-
 import * as SecureStore from "expo-secure-store";
-import { Action } from "./reducers";
+import { OrganGlobalState, Action, MatrixEvent } from "../types";
 
 export async function getClient() {
   const accessToken = await SecureStore.getItemAsync("accessToken");
@@ -15,19 +14,10 @@ export async function getClient() {
     accessToken,
   });
 }
-export type LinkedCalendar = {
-  calendar: TreeType;
-  url: string;
-};
-
-export type OrganGlobalState = {
-  calendars: LinkedCalendar[];
-  client: sdk.MatrixClient | undefined;
-};
 
 export const StateContext = createContext<
   [OrganGlobalState, React.Dispatch<Action>]
->([{ calendars: [], client: undefined }, () => null]);
+>([{ calendars: [], client: undefined, matrixRooms: [] }, () => null]);
 
 export const StateProvider = ({
   reducer,

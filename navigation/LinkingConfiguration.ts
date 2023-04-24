@@ -13,21 +13,9 @@ const linking: LinkingOptions<RootStackParamList> = {
   prefixes: [Linking.createURL("/")],
   config: {
     screens: {
-      Root: {
-        screens: {
-          Events: {
-            screens: {
-              EventsScreen: "one",
-            },
-          },
-          TabTwo: {
-            screens: {
-              TabTwoScreen: "two",
-            },
-          },
-        },
-      },
-      Modal: "modal",
+      Root: "root",
+      Login: "login",
+      Event: "event",
       NotFound: "*",
     },
   },
