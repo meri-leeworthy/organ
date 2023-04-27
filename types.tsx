@@ -54,19 +54,26 @@ export type MatrixRoom = {
 
 export type MatrixRoomList = MatrixRoom[];
 
-export type MatrixEvent = {};
+type DirectoryRadicalEventV1 = {
+  date: Date;
+  name: string;
+  description: string;
+  venue: string;
+};
+
+export type MatrixEvent = DirectoryRadicalEventV1;
 
 export type MatrixCalendar = MatrixRoom & {
   events: MatrixEvent[];
 };
 
-export type ICalendar = {
-  calendar: TreeType;
-  url: string;
-  name: string;
-};
+// export type ICalendar = {
+//   calendar: TreeType;
+//   url: string;
+//   name: string;
+// };
 
-type Calendar = ICalendar | MatrixCalendar;
+type Calendar = MatrixCalendar;
 
 export type OrganGlobalState = {
   calendars: Calendar[];
@@ -79,7 +86,8 @@ type DataAction<TData extends {}, TName extends string> = TData & {
 };
 
 export type Action =
-  | DataAction<ICalendar, "ADD_ICALENDAR">
+  // | DataAction<ICalendar, "ADD_ICALENDAR">
   | DataAction<MatrixCalendar, "ADD_MATRIX_CALENDAR">
   | DataAction<{ client: MatrixClient }, "SET_CLIENT">
-  | DataAction<{ matrixRooms: MatrixRoomList }, "SET_MATRIX_ROOMS">;
+  | DataAction<{ matrixRooms: MatrixRoomList }, "SET_MATRIX_ROOMS">
+  | (DataAction<MatrixEvent, "ADD_MATRIX_EVENT"> & { roomId: string });
