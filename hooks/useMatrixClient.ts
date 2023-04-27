@@ -6,7 +6,14 @@ import { useEffect, useState } from "react";
 import { useRetry } from "./useRetry";
 import { MatrixRoomList } from "../types";
 
-// this hook should return a local client instance and keep it in sync with the global client state
+type ClientSyncState =
+  | null
+  | "PREPARED"
+  | "SYNCING"
+  | "STOPPED"
+  | "CATCHUP"
+  | "RECONNECTING"
+  | "ERROR";
 
 export default function useMatrixClient(): {
   client: sdk.MatrixClient | undefined;
@@ -16,10 +23,13 @@ export default function useMatrixClient(): {
   const [localClient, setLocalClient] = useState<sdk.MatrixClient | undefined>(
     client
   );
+  const [clientSyncState, setClientSyncState] = useState<ClientSyncState>(null);
   const attemptCount = useRetry(3);
 
   function setClient(newClient: sdk.MatrixClient) {
-    console.log("useMatrixClient: setting client");
+    newClient.once(sdk.ClientEvent.Sync, (state: ClientSyncState) =>
+      setClientSyncState(state)
+    );
     setLocalClient(newClient);
     dispatch({
       type: "SET_CLIENT",
@@ -29,44 +39,40 @@ export default function useMatrixClient(): {
 
   useEffect(() => {
     if (!client) return;
-    const rooms = client?.getRooms();
+    const rooms = client.getRooms();
     const roomIds: MatrixRoomList | undefined = rooms?.map(room => {
       return { roomId: room.roomId, roomName: room.name };
     });
 
-    console.log("useMatrixClient roomIds", roomIds);
-
-    if (roomIds) {
+    if (roomIds && roomIds.length > 0) {
       AsyncStorage.setItem("matrixRooms", JSON.stringify(roomIds)); //could throw
       dispatch({ type: "SET_MATRIX_ROOMS", matrixRooms: roomIds });
     }
-  }, [attemptCount]);
+  }, [attemptCount, clientSyncState]);
 
   useEffect(() => {
     async function setClientWithTokenIfExists() {
-      const baseClient = client
-        ? client
-        : sdk.createClient({ baseUrl: "https://matrix.org" });
+      if (!!client && client.isLoggedIn()) return;
+
+      if (!client) {
+        const baseClient = sdk.createClient({ baseUrl: "https://matrix.org" });
+        setClient(baseClient);
+        return;
+      }
 
       const accessToken = await SecureStore.getItemAsync("accessToken");
 
-      if (!accessToken) throw new Error("No access token found");
-
-      console.log(
-        "Got access token from storage,",
-        accessToken,
-        "creating new client"
-      );
-
-      baseClient.setAccessToken(accessToken);
-
-      console.log("client isLoggedIn?:", baseClient.isLoggedIn());
-
-      const { user_id: userId } = await baseClient.whoami();
-      baseClient.credentials.userId = userId;
-
-      setClient(baseClient);
-      setLocalClient(baseClient);
+      if (accessToken) {
+        console.log(
+          "Got access token from storage,",
+          accessToken,
+          "creating new client"
+        );
+        client.setAccessToken(accessToken);
+        const { user_id: userId } = await client.whoami();
+        client.credentials.userId = userId;
+        setClient(client);
+      }
     }
     setClientWithTokenIfExists();
   }, [client]);

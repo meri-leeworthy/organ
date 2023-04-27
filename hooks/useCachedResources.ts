@@ -23,7 +23,8 @@ export default function useCachedResources() {
 
         const storedMatrixRooms = await AsyncStorage.getItem("matrixRooms");
 
-        if (!storedMatrixRooms) throw new Error("No data");
+        // if (!storedMatrixRooms) throw new Error("no stored matrix rooms");
+        if (!storedMatrixRooms) return;
 
         const parsedMatrixRooms: unknown = await JSON.parse(storedMatrixRooms);
 

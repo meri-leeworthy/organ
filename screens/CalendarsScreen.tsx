@@ -1,9 +1,9 @@
 import { Text, View, TextInput } from "../components/Themed";
-import { StyleSheet, Button } from "react-native";
+import { StyleSheet, Button, Alert, Pressable } from "react-native";
 import { useState, useEffect } from "react";
 import { useStateValue } from "../state/context";
 import { parseIcal } from "../lib/ical";
-import { MatrixRoomList } from "../types";
+import { MatrixRoom, MatrixRoomList } from "../types";
 
 // matches #room:server.tld or !room:server.tld
 const MATRIX_FQID = /(\!|#)\w+:[\w.-]+\.\w+$/;
@@ -101,6 +101,31 @@ export default function CalendarsScreen() {
     }
   }
 
+  const addRoomToCalendarsAlert = (room: MatrixRoom) =>
+    Alert.alert(
+      "Add Calendar",
+      `Do you want to add ${room.roomName} to your calendars?`,
+      [
+        {
+          text: "Cancel",
+          onPress: () => console.log("Cancel Pressed"),
+          style: "cancel",
+        },
+        {
+          text: "OK",
+          onPress: () => {
+            console.log("OK Pressed, adding room to calendars");
+            dispatch({
+              type: "ADD_MATRIX_CALENDAR",
+              roomId: room.roomId,
+              roomName: room.roomName,
+              events: [],
+            });
+          },
+        },
+      ]
+    );
+
   return (
     <View style={styles.container}>
       <TextInput
@@ -119,9 +144,11 @@ export default function CalendarsScreen() {
       ))}
       <Text style={styles.heading}>My Matrix Rooms</Text>
       {matrixRooms.map((room, i) => (
-        <View key={i} style={styles.calendar}>
-          <Text>{room.roomName}</Text>
-        </View>
+        <Pressable key={i} onPress={() => addRoomToCalendarsAlert(room)}>
+          <View style={styles.calendar}>
+            <Text>{room.roomName}</Text>
+          </View>
+        </Pressable>
       ))}
     </View>
   );

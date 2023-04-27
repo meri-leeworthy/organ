@@ -13,10 +13,8 @@ export default function LoginScreen() {
   const { client, setClient } = useMatrixClient();
   const navigation = useNavigation();
 
-  // question: if I login on a client then use useMatrixClient to get a client
-  // on another screen, will it be logged in?
-
   if (!client) return <Text>loading...</Text>;
+  if (client.isLoggedIn()) return <Text>already logged in</Text>;
 
   const handleLogin = async () => {
     const loginflows = await client.loginFlows();

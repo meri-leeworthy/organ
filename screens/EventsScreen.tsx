@@ -101,7 +101,13 @@ export default function EventsScreen({
         keyExtractor={item => (item as IcalEvent).UID}
       />
       <View style={styles.fab}>
-        <FontAwesome size={30} name="plus" color="white" />
+        <Pressable
+          onPress={() => navigation.navigate("CreateEvent")}
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.5 : 1,
+          })}>
+          <FontAwesome size={30} name="plus" color="white" />
+        </Pressable>
       </View>
     </Drawer>
   ) : (

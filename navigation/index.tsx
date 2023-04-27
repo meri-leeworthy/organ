@@ -27,6 +27,7 @@ import EventScreen from "../screens/EventScreen";
 import { StateProvider } from "../state/context";
 import { reducer } from "../state/reducers";
 import { parsedIcal } from "../state/fileSample";
+import CreateEventScreen from "../screens/CreateEventScreen";
 
 console.log(parsedIcal);
 
@@ -112,6 +113,11 @@ function RootNavigator() {
       />
       <Stack.Group screenOptions={{ presentation: "modal" }}>
         <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen
+          name="CreateEvent"
+          component={CreateEventScreen}
+          options={{ headerTitle: "Create New Event" }}
+        />
       </Stack.Group>
       <Stack.Screen
         name="Event"

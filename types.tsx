@@ -28,6 +28,7 @@ declare global {
 export type RootStackParamList = {
   Root: { drawerIsOpen: boolean };
   Login: undefined;
+  CreateEvent: undefined;
   NotFound: undefined;
   Event: { eventName: string; uid: string };
 };
