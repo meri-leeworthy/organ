@@ -58,20 +58,20 @@ export default function CalendarsScreen() {
 
     // if it's an ical url, we need to fetch the url and add it to the user's list of calendars
 
-    if (urlType === "ical") {
-      fetch(url)
-        .then(response => response.text())
-        .then(text => {
-          dispatch({
-            type: "ADD_ICALENDAR",
-            url,
-            name: "My iCal", //TODO: get name from ical
-            calendar: parseIcal(text)[0],
-          });
-          setLoading(false);
-        })
-        .catch(error => setError(error));
-    }
+    // if (urlType === "ical") {
+    //   fetch(url)
+    //     .then(response => response.text())
+    //     .then(text => {
+    //       dispatch({
+    //         type: "ADD_ICALENDAR",
+    //         url,
+    //         name: "My iCal", //TODO: get name from ical
+    //         calendar: parseIcal(text)[0],
+    //       });
+    //       setLoading(false);
+    //     })
+    //     .catch(error => setError(error));
+    // }
 
     if (urlType === "matrix") {
       // if it's a matrix room that the user is in, we need to add it to the user's list of calendars
@@ -139,7 +139,7 @@ export default function CalendarsScreen() {
       <Text style={styles.heading}>My Calendars</Text>
       {calendars.map((calendar, i) => (
         <View key={i} style={styles.calendar}>
-          <Text>{"url" in calendar ? calendar.name : calendar.roomName}</Text>
+          <Text>{calendar.roomName}</Text>
         </View>
       ))}
       <Text style={styles.heading}>My Matrix Rooms</Text>

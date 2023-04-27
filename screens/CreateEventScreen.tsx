@@ -24,13 +24,7 @@ import { DismissKeyboard } from "../components/DismissKeyboard";
 // } from "react-native-keyboard-manager"; // this may not work with expo go as i think it's a native module
 
 export default function CreateEventScreen() {
-  const [{ calendars, matrixRooms }, dispatch] = useStateValue();
-  console.log("calendars", calendars);
-  const matrixCalendars = calendars.filter(
-    c => "roomId" in c
-  ) as MatrixCalendar[];
-  console.log("matrixcals", matrixCalendars);
-
+  const [{ calendars }, dispatch] = useStateValue();
   const [selectedCalendar, setSelectedCalendar] = useState("");
   const [eventName, setEventName] = useState("");
   const [venue, setVenue] = useState("");
@@ -39,9 +33,10 @@ export default function CreateEventScreen() {
   const navigation = useNavigation();
   const [date, setDate] = useState(new Date(Date.now()));
   const myHeaderHeight = useHeaderHeight();
-  // const [time, setTime] = useState(new Date(1598051730000));
-  // const [mode, setMode] = useState<"date" | "time" | undefined>("date");
-  // const [show, setShow] = useState(true);
+
+  const matrixCalendars = calendars.filter(
+    c => "roomId" in c
+  ) as MatrixCalendar[];
 
   const onChange = (
     event: DateTimePickerEvent,
@@ -52,22 +47,6 @@ export default function CreateEventScreen() {
     // setShow(false);
     setDate(currentDate);
   };
-
-  // const showMode = (currentMode: "date" | "time" | undefined) => {
-  //   if (Platform.OS === "android") {
-  //     setShow(false);
-  //     // for iOS, add a button that closes the picker
-  //   }
-  //   setMode(currentMode);
-  // };
-
-  // const showDatepicker = () => {
-  //   showMode("date");
-  // };
-
-  // const showTimepicker = () => {
-  //   showMode("time");
-  // };
 
   const DateTimePickerSet = () => {
     return (
@@ -92,9 +71,6 @@ export default function CreateEventScreen() {
     );
   };
 
-  // question: if I login on a client then use useMatrixClient to get a client
-  // on another screen, will it be logged in?
-
   if (!client) return <Text>loading...</Text>;
 
   const handleCreateEvent = async () => {
@@ -109,7 +85,7 @@ export default function CreateEventScreen() {
     //   body: "message text",
     //   msgtype: "m.text",
     // };
-    client.sendEvent(
+    await client.sendEvent(
       selectedCalendar,
       "directory.radical.event.v1",
       newEvent,
@@ -118,22 +94,7 @@ export default function CreateEventScreen() {
         console.log(err);
       }
     );
-    // try {
-    //   const response = await client.login("m.login.password", {
-    //     user: username,
-    //     password: password,
-    //     // refresh_token: true,
-    //   });
-    //   console.log(response);
-    //   await SecureStore.setItemAsync("accessToken", response.access_token);
-    //   console.log("access token saved");
-    //   // await SecureStore.setItemAsync("refreshToken", response.refresh_token);
-    //   // console.log("refresh token saved");
-    //   setClient(client);
-    //   navigation.goBack();
-    // } catch (error) {
-    //   console.error("login didn't work!", error);
-    // }
+    navigation.goBack();
   };
 
   return (
@@ -142,7 +103,6 @@ export default function CreateEventScreen() {
         behavior={Platform.OS == "ios" ? "padding" : "height"}
         keyboardVerticalOffset={myHeaderHeight + 47}
         style={{ flex: 1 }}>
-        {/* <PreviousNextView style={{ flex: 1 }}> */}
         <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.label}>Choose Calendar</Text>
           <RNPickerSelect
@@ -180,28 +140,10 @@ export default function CreateEventScreen() {
 
           <Button title="Create" onPress={handleCreateEvent} />
 
-          {/* <Text>
-          Lorem ipsum dolor sit, amet consectetur adipisicing elit. Modi quasi
-          corrupti quas beatae minus aut odit voluptatum, delectus nostrum
-          soluta nemo animi dicta repudiandae fuga itaque vitae dignissimos
-          voluptatibus minima. Lorem ipsum dolor sit amet consectetur
-          adipisicing elit. Rerum magni quam, nulla distinctio reprehenderit,
-          eligendi similique libero quasi non fuga laudantium aperiam! Magnam
-          sed dolores, delectus quibusdam iusto vel pariatur? Lorem ipsum dolor
-          sit amet consectetur adipisicing elit. Fugit soluta, numquam
-          voluptatum modi molestias quia! Deleniti excepturi distinctio dicta
-          non consequatur, quaerat sint, quisquam possimus sit, dignissimos
-          quidem quae fugiat. Lorem ipsum dolor sit amet consectetur,
-          adipisicing elit. Natus porro exercitationem, cum laudantium velit
-          deleniti enim omnis sint aliquid maiores ex commodi. Impedit molestiae
-          alias, nesciunt natus ab repellat id!
-        </Text> */}
-
           {/* Use a light status bar on iOS to account for the black space above the modal */}
           <StatusBar style={Platform.OS === "ios" ? "light" : "auto"} />
           <View style={{ flex: 1 }} />
         </ScrollView>
-        {/* </PreviousNextView> */}
       </KeyboardAvoidingView>
     </DismissKeyboard>
   );
@@ -226,16 +168,13 @@ const styles = StyleSheet.create({
   datetimepicker: {
     marginHorizontal: 8,
     borderRadius: 4,
-    // backgroundColor: "#999",
   },
   container: {
     flex: 1,
-    // display: "flex",
     height: "100%",
-    // overflow: "scroll",
-    // alignItems: "stretch",
     justifyContent: "flex-end",
     padding: 12,
+    backgroundColor: "white",
   },
   title: {
     fontSize: 20,

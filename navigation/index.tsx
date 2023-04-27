@@ -26,10 +26,10 @@ import LinkingConfiguration from "./LinkingConfiguration";
 import EventScreen from "../screens/EventScreen";
 import { StateProvider } from "../state/context";
 import { reducer } from "../state/reducers";
-import { parsedIcal } from "../state/fileSample";
+// import { parsedIcal } from "../state/fileSample";
 import CreateEventScreen from "../screens/CreateEventScreen";
 
-console.log(parsedIcal);
+// console.log(parsedIcal);
 
 export default function Navigation({
   matrixRooms,
@@ -43,7 +43,7 @@ export default function Navigation({
     <StateProvider
       reducer={reducer}
       initialState={{
-        calendars: parsedIcal,
+        calendars: [],
         client: undefined,
         matrixRooms,
       }}>

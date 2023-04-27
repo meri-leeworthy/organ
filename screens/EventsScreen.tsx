@@ -1,7 +1,7 @@
 import { FlatList, Pressable, StyleSheet, Button } from "react-native";
 import { Text, View } from "../components/Themed";
 import { RootStackScreenProps } from "../types";
-import { IcalEvent, dateSort } from "../lib/ical";
+// import { IcalEvent, dateSort } from "../lib/ical";
 import ListEvent from "../components/ListEvent";
 import { TreeType } from "icalts/dist/src/types";
 import { useStateValue } from "../state/context";
@@ -28,91 +28,52 @@ export default function EventsScreen({
   const [{ calendars }] = useStateValue();
   const { drawerIsOpen } = route.params;
   const { client } = useMatrixClient();
-  // const attemptCount = useRetry(6);
-
-  useEffect(() => {
-    if (!client) return;
-    const unsubscribe = navigation.addListener("focus", () => {
-      console.log("EventsScreen was focused");
-    });
-
-    if (!client.isLoggedIn()) return;
-
-    console.log(`Logged in as ${client.getUserId()}`);
-
-    client.on(
-      // @ts-ignore
-      "Room.timeline",
-      function (event: any, room: any, toStartOfTimeline: any) {
-        if (toStartOfTimeline) {
-          return; // don't print paginated results
-        }
-        if (event.getType() !== "m.room.message") {
-          return; // only print messages
-        }
-        console.log(
-          // the room name will update with m.room.name events automatically
-          "(%s) %s :: %s",
-          room.name,
-          event.getSender(),
-          event.getContent().body
-        );
-      }
-    );
-
-    client.startClient();
-
-    return () => {
-      client.stopClient();
-      unsubscribe();
-    };
-  }, [navigation, client]);
 
   const cal = "calendar" in calendars[0] ? calendars[0].calendar : []; //TODO: merge all calendars
 
-  const Item = (vevent: TreeType) => (
-    <Pressable
-      onPress={() =>
-        navigation.navigate("Event", {
-          eventName: (vevent as IcalEvent).SUMMARY,
-          uid: (vevent as IcalEvent).UID,
-        })
-      }>
-      <ListEvent vevent={vevent as IcalEvent} />
-    </Pressable>
-  );
+  // const Item = (vevent: TreeType) => (
+  //   <Pressable
+  //     onPress={() =>
+  //       navigation.navigate("Event", {
+  //         eventName: (vevent as IcalEvent).SUMMARY,
+  //         uid: (vevent as IcalEvent).UID,
+  //       })
+  //     }>
+  //     <ListEvent vevent={vevent as IcalEvent} />
+  //   </Pressable>
+  // );
 
-  return "VEVENT" in cal && Array.isArray(cal.VEVENT) ? (
-    <Drawer
-      open={drawerIsOpen}
-      onOpen={() => {
-        // navigation.setParams({ drawerIsOpen: true });
-      }}
-      onClose={() => {
-        // navigation.setParams({ drawerIsOpen: false });
-      }}
-      drawerType="front"
-      renderDrawerContent={() => <CalendarsScreen />}>
-      <FlatList
-        data={cal.VEVENT.sort((a, b) =>
-          dateSort((a as IcalEvent).DTSTART, (b as IcalEvent).DTSTART)
-        )}
-        renderItem={vevent => <Item {...vevent.item} />}
-        keyExtractor={item => (item as IcalEvent).UID}
-      />
-      <View style={styles.fab}>
-        <Pressable
-          onPress={() => navigation.navigate("CreateEvent")}
-          style={({ pressed }) => ({
-            opacity: pressed ? 0.5 : 1,
-          })}>
-          <FontAwesome size={30} name="plus" color="white" />
-        </Pressable>
-      </View>
-    </Drawer>
-  ) : (
-    <Text>No Events Found</Text>
-  );
+  // return; "VEVENT" in cal && Array.isArray(cal.VEVENT) ? (
+  //   <Drawer
+  //     open={drawerIsOpen}
+  //     onOpen={() => {
+  //       // navigation.setParams({ drawerIsOpen: true });
+  //     }}
+  //     onClose={() => {
+  //       // navigation.setParams({ drawerIsOpen: false });
+  //     }}
+  //     drawerType="front"
+  //     renderDrawerContent={() => <CalendarsScreen />}>
+  //     <FlatList
+  //       data={cal.VEVENT.sort((a, b) =>
+  //         dateSort((a as IcalEvent).DTSTART, (b as IcalEvent).DTSTART)
+  //       )}
+  //       renderItem={vevent => <Item {...vevent.item} />}
+  //       keyExtractor={item => (item as IcalEvent).UID}
+  //     />
+  //     <View style={styles.fab}>
+  //       <Pressable
+  //         onPress={() => navigation.navigate("CreateEvent")}
+  //         style={({ pressed }) => ({
+  //           opacity: pressed ? 0.5 : 1,
+  //         })}>
+  //         <FontAwesome size={30} name="plus" color="white" />
+  //       </Pressable>
+  //     </View>
+  //   </Drawer>
+  // ) : (
+  return <Text>No Events Found</Text>;
+  // );
 
   // TODO: Split sorted list into Past and Future Events
 }

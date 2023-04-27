@@ -1,4 +1,3 @@
-import { TreeType } from "icalts/dist/src/types";
 import * as sdk from "matrix-js-sdk";
 import React, { createContext, Reducer, useContext, useReducer } from "react";
 import * as SecureStore from "expo-secure-store";

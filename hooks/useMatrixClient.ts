@@ -18,11 +18,13 @@ type ClientSyncState =
 export default function useMatrixClient(): {
   client: sdk.MatrixClient | undefined;
   setClient: (client: sdk.MatrixClient) => void;
+  clientSyncState: ClientSyncState;
 } {
   const [{ client }, dispatch] = useStateValue();
   const [localClient, setLocalClient] = useState<sdk.MatrixClient | undefined>(
     client
   );
+  const [localClientChangeFlag, setLocalClientChangeFlag] = useState(false); //this is a hack to force a rerender when the client changes
   const [clientSyncState, setClientSyncState] = useState<ClientSyncState>(null);
   const attemptCount = useRetry(3);
 
@@ -31,6 +33,7 @@ export default function useMatrixClient(): {
       setClientSyncState(state)
     );
     setLocalClient(newClient);
+    setLocalClientChangeFlag(true);
     dispatch({
       type: "SET_CLIENT",
       client: newClient,
@@ -75,9 +78,46 @@ export default function useMatrixClient(): {
       }
     }
     setClientWithTokenIfExists();
-  }, [client]);
+  }, [client, localClient]);
 
-  return { client: localClient, setClient };
+  useEffect(() => {
+    if (!localClient) return;
+    if (!localClient.isLoggedIn()) {
+      console.log("loggint in? ", localClient.isLoggedIn());
+      return;
+    }
+
+    console.log(`Logged in as ${localClient.getUserId()}`);
+
+    localClient.on(
+      sdk.RoomEvent.Timeline,
+      function (event: any, room: any, toStartOfTimeline: any) {
+        if (toStartOfTimeline) {
+          return; // don't print paginated results
+        }
+        if (event.getType() !== "directory.radical.event.v1") {
+          return; // only print messages
+        }
+        console.log(
+          // the room name will update with m.room.name events automatically
+          "(%s) %s :: %s",
+          room.name,
+          event.getSender(),
+          JSON.stringify(event.getContent())
+        );
+      }
+    );
+    if (clientSyncState === null || "STOPPED") localClient.startClient();
+    return () => {
+      localClient.stopClient();
+    };
+  }, [localClient, clientSyncState, localClientChangeFlag]);
+
+  useEffect(() => {
+    setLocalClientChangeFlag(false);
+  }, [localClientChangeFlag]);
+
+  return { client: localClient, setClient, clientSyncState };
 }
 
 // Here is some code that was added to the client config

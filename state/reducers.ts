@@ -1,25 +1,25 @@
-import { ICalendar, OrganGlobalState, Action } from "../types";
+import { OrganGlobalState, Action } from "../types";
 import { Reducer } from "react";
 
 export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
   switch (action.type) {
-    case "ADD_ICALENDAR":
-      console.log(`Adding calendar ${action.url}`);
-      if (state.calendars.some(c => "url" in c && c.url === action.url)) {
-        console.log(`Calendar already exists`);
-        return state;
-      }
-      return {
-        ...state,
-        calendars: [
-          ...state.calendars,
-          {
-            calendar: action.calendar,
-            url: action.url,
-            name: action.name,
-          },
-        ],
-      };
+    // case "ADD_ICALENDAR":
+    //   console.log(`Adding calendar ${action.url}`);
+    //   if (state.calendars.some(c => "url" in c && c.url === action.url)) {
+    //     console.log(`Calendar already exists`);
+    //     return state;
+    //   }
+    //   return {
+    //     ...state,
+    //     calendars: [
+    //       ...state.calendars,
+    //       {
+    //         calendar: action.calendar,
+    //         url: action.url,
+    //         name: action.name,
+    //       },
+    //     ],
+    //   };
     case "ADD_MATRIX_CALENDAR":
       console.log(`Adding calendar ${action.roomId}`);
       if (
@@ -50,6 +50,8 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
         ...state,
         client: action.client,
       };
+    case "ADD_MATRIX_EVENT":
+      console.log(`Adding event ${action.name}`);
     default:
       return state;
   }
