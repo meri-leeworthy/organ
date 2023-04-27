@@ -1,7 +1,7 @@
 import * as sdk from "matrix-js-sdk";
 import React, { createContext, Reducer, useContext, useReducer } from "react";
 import * as SecureStore from "expo-secure-store";
-import { OrganGlobalState, Action, MatrixEvent } from "../types";
+import { OrganGlobalState, Action } from "../types";
 
 export async function getClient() {
   const accessToken = await SecureStore.getItemAsync("accessToken");
@@ -16,7 +16,15 @@ export async function getClient() {
 
 export const StateContext = createContext<
   [OrganGlobalState, React.Dispatch<Action>]
->([{ calendars: [], client: undefined, matrixRooms: [] }, () => null]);
+>([
+  {
+    calendars: new Map(),
+    client: undefined,
+    matrixRooms: [],
+    events: new Map(),
+  },
+  () => null,
+]);
 
 export const StateProvider = ({
   reducer,

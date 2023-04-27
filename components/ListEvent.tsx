@@ -1,22 +1,17 @@
 import { StyleSheet } from "react-native";
 import { Text, View } from "../components/Themed";
-import {
-  parseDate,
-  IcalEvent,
-  DATETIME_PRINT_FORMAT,
-  DATE_PRINT_FORMAT,
-  printDate,
-} from "../lib/ical";
 import dayjs from "dayjs";
+import { MatrixCalendarEvent } from "../types";
 
-export default function ListEvent({ vevent }: { vevent: IcalEvent }) {
-  const dtStart = parseDate(vevent.DTSTART);
-  // const dtEnd = parseDate(vevent.DTEND);
-  // "DTEND" in vevent ? dayjs(vevent.DTEND, gCalDateFormat) : undefined;
+export default function ListEvent({
+  calEvent,
+}: {
+  calEvent: MatrixCalendarEvent;
+}) {
   return (
     <View style={styles.event}>
-      <Text>{vevent.SUMMARY}</Text>
-      <Text>{printDate(dtStart)}</Text>
+      <Text>{calEvent.name}</Text>
+      <Text>{calEvent.date.toDateString()}</Text>
     </View>
   );
 }

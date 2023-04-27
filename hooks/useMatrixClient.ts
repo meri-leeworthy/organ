@@ -91,7 +91,7 @@ export default function useMatrixClient(): {
 
     localClient.on(
       sdk.RoomEvent.Timeline,
-      function (event: any, room: any, toStartOfTimeline: any) {
+      function (event, room, toStartOfTimeline) {
         if (toStartOfTimeline) {
           return; // don't print paginated results
         }

@@ -43,9 +43,10 @@ export default function Navigation({
     <StateProvider
       reducer={reducer}
       initialState={{
-        calendars: [],
+        calendars: new Map(),
         client: undefined,
         matrixRooms,
+        events: new Map(),
       }}>
       <NavigationContainer
         // linking={LinkingConfiguration}

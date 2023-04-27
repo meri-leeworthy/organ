@@ -11,20 +11,15 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { Text, TextInput, View } from "../components/Themed";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import useMatrixClient from "../hooks/useMatrixClient";
-// import * as SecureStore from "expo-secure-store";
 import { useNavigation } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useStateValue } from "../state/context";
-import { MatrixCalendar } from "../types";
 import { DismissKeyboard } from "../components/DismissKeyboard";
-// import KeyboardManager, {
-//   PreviousNextView,
-// } from "react-native-keyboard-manager"; // this may not work with expo go as i think it's a native module
 
 export default function CreateEventScreen() {
-  const [{ calendars }, dispatch] = useStateValue();
+  const [{ calendars }] = useStateValue();
   const [selectedCalendar, setSelectedCalendar] = useState("");
   const [eventName, setEventName] = useState("");
   const [venue, setVenue] = useState("");
@@ -34,41 +29,14 @@ export default function CreateEventScreen() {
   const [date, setDate] = useState(new Date(Date.now()));
   const myHeaderHeight = useHeaderHeight();
 
-  const matrixCalendars = calendars.filter(
-    c => "roomId" in c
-  ) as MatrixCalendar[];
-
+  const matrixCalendars = calendars.values();
   const onChange = (
     event: DateTimePickerEvent,
     selectedDate: Date | undefined
   ) => {
     if (selectedDate === undefined) return;
     const currentDate = selectedDate;
-    // setShow(false);
     setDate(currentDate);
-  };
-
-  const DateTimePickerSet = () => {
-    return (
-      <View style={styles.datetimecontainer}>
-        <DateTimePicker
-          testID="dateTimePicker"
-          value={date}
-          mode="date"
-          is24Hour={true}
-          onChange={onChange}
-          style={styles.datetimepicker}
-        />
-        <DateTimePicker
-          testID="dateTimePicker"
-          value={date}
-          mode="time"
-          is24Hour={true}
-          onChange={onChange}
-          style={styles.datetimepicker}
-        />
-      </View>
-    );
   };
 
   if (!client) return <Text>loading...</Text>;
@@ -80,11 +48,6 @@ export default function CreateEventScreen() {
       description,
       date,
     };
-    console.log("event:", newEvent, selectedCalendar);
-    // const content = {
-    //   body: "message text",
-    //   msgtype: "m.text",
-    // };
     await client.sendEvent(
       selectedCalendar,
       "directory.radical.event.v1",
@@ -108,7 +71,7 @@ export default function CreateEventScreen() {
           <RNPickerSelect
             value={selectedCalendar}
             onValueChange={itemValue => setSelectedCalendar(itemValue)}
-            items={matrixCalendars.map(c => {
+            items={[...matrixCalendars].map(c => {
               return { label: c.roomName, value: c.roomId };
             })}
             style={{ viewContainer: styles.select }}
@@ -120,7 +83,7 @@ export default function CreateEventScreen() {
             placeholder="Name of your event"
           />
           <Text style={styles.label}>Date</Text>
-          <DateTimePickerSet />
+          <DateTimePickerSet onChange={onChange} date={date} />
           <Text style={styles.label}>Venue</Text>
           <TextInput
             onChangeText={setVenue}
@@ -148,6 +111,38 @@ export default function CreateEventScreen() {
     </DismissKeyboard>
   );
 }
+
+const DateTimePickerSet = ({
+  onChange,
+  date,
+}: {
+  onChange: (
+    event: DateTimePickerEvent,
+    selectedDate: Date | undefined
+  ) => void;
+  date: Date;
+}) => {
+  return (
+    <View style={styles.datetimecontainer}>
+      <DateTimePicker
+        testID="dateTimePicker"
+        value={date}
+        mode="date"
+        is24Hour={true}
+        onChange={onChange}
+        style={styles.datetimepicker}
+      />
+      <DateTimePicker
+        testID="dateTimePicker"
+        value={date}
+        mode="time"
+        is24Hour={true}
+        onChange={onChange}
+        style={styles.datetimepicker}
+      />
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   select: {

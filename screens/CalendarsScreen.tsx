@@ -42,12 +42,7 @@ export default function CalendarsScreen() {
     }
 
     // if calendar already exists, don't add it again
-    if (
-      calendars.find(
-        c =>
-          ("url" in c && c.url === url) || ("roomId" in c && c.roomId === url)
-      )
-    ) {
+    if (calendars.has(url)) {
       setError("Calendar already exists");
       return;
     }
@@ -87,7 +82,7 @@ export default function CalendarsScreen() {
           type: "ADD_MATRIX_CALENDAR",
           roomId,
           roomName: room.roomName,
-          events: [],
+          events: new Set(),
         });
         setLoading(false);
         return;
@@ -119,7 +114,7 @@ export default function CalendarsScreen() {
               type: "ADD_MATRIX_CALENDAR",
               roomId: room.roomId,
               roomName: room.roomName,
-              events: [],
+              events: new Set(),
             });
           },
         },
@@ -137,8 +132,8 @@ export default function CalendarsScreen() {
       {isLoading && <Text>Loading...</Text>}
       {error && <Text style={{ color: "red" }}>{error}</Text>}
       <Text style={styles.heading}>My Calendars</Text>
-      {calendars.map((calendar, i) => (
-        <View key={i} style={styles.calendar}>
+      {[...calendars.values()].map(calendar => (
+        <View key={calendar.roomId} style={styles.calendar}>
           <Text>{calendar.roomName}</Text>
         </View>
       ))}

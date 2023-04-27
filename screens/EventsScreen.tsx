@@ -1,6 +1,6 @@
 import { FlatList, Pressable, StyleSheet, Button } from "react-native";
 import { Text, View } from "../components/Themed";
-import { RootStackScreenProps } from "../types";
+import { MatrixCalendarEvent, RootStackScreenProps } from "../types";
 // import { IcalEvent, dateSort } from "../lib/ical";
 import ListEvent from "../components/ListEvent";
 import { TreeType } from "icalts/dist/src/types";
@@ -25,22 +25,31 @@ export default function EventsScreen({
   route,
   navigation,
 }: RootStackScreenProps<"Root">) {
-  const [{ calendars }] = useStateValue();
+  const [{ calendars, events }] = useStateValue();
   const { drawerIsOpen } = route.params;
   const { client } = useMatrixClient();
 
-  const cal = "calendar" in calendars[0] ? calendars[0].calendar : []; //TODO: merge all calendars
+  return (
+    <View>
+      {[...events.values()].map(calEvent => {
+        return <Text>{calEvent.name}</Text>;
+      })}
+    </View>
+  );
 
-  // const Item = (vevent: TreeType) => (
-  //   <Pressable
-  //     onPress={() =>
-  //       navigation.navigate("Event", {
-  //         eventName: (vevent as IcalEvent).SUMMARY,
-  //         uid: (vevent as IcalEvent).UID,
-  //       })
-  //     }>
-  //     <ListEvent vevent={vevent as IcalEvent} />
-  //   </Pressable>
+  // const cal = "calendar" in calendars[0] ? calendars[0].calendar : []; //TODO: merge all calendars
+
+  const Item = (calEvent: MatrixCalendarEvent) => (
+    <Pressable
+      onPress={() =>
+        navigation.navigate("Event", {
+          eventId: calEvent.eventId,
+          eventName: calEvent.name,
+        })
+      }>
+      <ListEvent calEvent={calEvent} />
+    </Pressable>
+  );
   // );
 
   // return; "VEVENT" in cal && Array.isArray(cal.VEVENT) ? (
@@ -72,7 +81,7 @@ export default function EventsScreen({
   //     </View>
   //   </Drawer>
   // ) : (
-  return <Text>No Events Found</Text>;
+  // return <Text>No Events Found</Text>;
   // );
 
   // TODO: Split sorted list into Past and Future Events

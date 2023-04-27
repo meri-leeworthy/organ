@@ -30,7 +30,7 @@ export type RootStackParamList = {
   Login: undefined;
   CreateEvent: undefined;
   NotFound: undefined;
-  Event: { eventName: string; uid: string };
+  Event: { eventId: string; eventName: string };
 };
 
 export type RootStackScreenProps<Screen extends keyof RootStackParamList> =
@@ -49,7 +49,7 @@ export type RootStackScreenProps<Screen extends keyof RootStackParamList> =
 
 export type MatrixRoom = {
   roomName: string;
-  roomId: string;
+  roomId: MatrixRoomID;
 };
 
 export type MatrixRoomList = MatrixRoom[];
@@ -59,12 +59,15 @@ type DirectoryRadicalEventV1 = {
   name: string;
   description: string;
   venue: string;
+  eventId: MatrixEventID;
 };
 
-export type MatrixEvent = DirectoryRadicalEventV1;
+export type MatrixCalendarEvent = DirectoryRadicalEventV1;
+
+type MatrixEventID = string;
 
 export type MatrixCalendar = MatrixRoom & {
-  events: MatrixEvent[];
+  events: Set<MatrixEventID>;
 };
 
 // export type ICalendar = {
@@ -73,12 +76,15 @@ export type MatrixCalendar = MatrixRoom & {
 //   name: string;
 // };
 
+type MatrixRoomID = string;
 type Calendar = MatrixCalendar;
+type CalendarID = MatrixRoomID;
 
 export type OrganGlobalState = {
-  calendars: Calendar[];
+  calendars: Map<CalendarID, Calendar>;
   client: MatrixClient | undefined;
   matrixRooms: MatrixRoomList;
+  events: Map<MatrixEventID, MatrixCalendarEvent>;
 };
 
 type DataAction<TData extends {}, TName extends string> = TData & {
@@ -86,8 +92,11 @@ type DataAction<TData extends {}, TName extends string> = TData & {
 };
 
 export type Action =
-  // | DataAction<ICalendar, "ADD_ICALENDAR">
-  | DataAction<MatrixCalendar, "ADD_MATRIX_CALENDAR">
   | DataAction<{ client: MatrixClient }, "SET_CLIENT">
   | DataAction<{ matrixRooms: MatrixRoomList }, "SET_MATRIX_ROOMS">
-  | (DataAction<MatrixEvent, "ADD_MATRIX_EVENT"> & { roomId: string });
+  // | DataAction<ICalendar, "ADD_ICALENDAR">
+  | DataAction<MatrixCalendar, "ADD_MATRIX_CALENDAR">
+  | (DataAction<MatrixCalendarEvent, "ADD_MATRIX_EVENT"> & {
+      calendarId: CalendarID;
+      eventId: MatrixEventID;
+    });
