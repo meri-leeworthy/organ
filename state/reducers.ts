@@ -26,9 +26,11 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
         console.log(`Calendar already exists`);
         return state;
       }
+
+      // this is where you would want to check the room to see if it has any calEvents
+
       return {
         ...state,
-        // calendars is a Map of roomId to calendar
         calendars: new Map(state.calendars).set(action.roomId, {
           events: action.events,
           roomName: action.roomName,
@@ -48,13 +50,19 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
       };
     case "ADD_MATRIX_EVENT":
       console.log(`Adding event ${action.name}`);
+      // adds events to Map even if calendar doesn't exist in store
       const calendar = state.calendars.get(action.calendarId)!;
+      const newCalendars = state.calendars.has(action.calendarId)
+        ? new Map(state.calendars).set(action.calendarId, {
+            ...calendar,
+            events: new Set(calendar.events?.values() || null).add(
+              action.eventId
+            ),
+          })
+        : state.calendars;
       return {
         ...state,
-        calendars: new Map(state.calendars).set(action.calendarId, {
-          ...calendar,
-          events: new Set(calendar.events).add(action.eventId),
-        }),
+        calendars: newCalendars,
         events: new Map(state.events).set(action.eventId, {
           name: action.name,
           date: action.date,

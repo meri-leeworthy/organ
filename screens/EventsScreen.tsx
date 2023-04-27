@@ -29,17 +29,7 @@ export default function EventsScreen({
   const { drawerIsOpen } = route.params;
   const { client } = useMatrixClient();
 
-  return (
-    <View>
-      {[...events.values()].map(calEvent => {
-        return <Text>{calEvent.name}</Text>;
-      })}
-    </View>
-  );
-
-  // const cal = "calendar" in calendars[0] ? calendars[0].calendar : []; //TODO: merge all calendars
-
-  const Item = (calEvent: MatrixCalendarEvent) => (
+  const Item = ({ calEvent }: { calEvent: MatrixCalendarEvent }) => (
     <Pressable
       onPress={() =>
         navigation.navigate("Event", {
@@ -50,39 +40,36 @@ export default function EventsScreen({
       <ListEvent calEvent={calEvent} />
     </Pressable>
   );
-  // );
 
-  // return; "VEVENT" in cal && Array.isArray(cal.VEVENT) ? (
-  //   <Drawer
-  //     open={drawerIsOpen}
-  //     onOpen={() => {
-  //       // navigation.setParams({ drawerIsOpen: true });
-  //     }}
-  //     onClose={() => {
-  //       // navigation.setParams({ drawerIsOpen: false });
-  //     }}
-  //     drawerType="front"
-  //     renderDrawerContent={() => <CalendarsScreen />}>
-  //     <FlatList
-  //       data={cal.VEVENT.sort((a, b) =>
-  //         dateSort((a as IcalEvent).DTSTART, (b as IcalEvent).DTSTART)
-  //       )}
-  //       renderItem={vevent => <Item {...vevent.item} />}
-  //       keyExtractor={item => (item as IcalEvent).UID}
-  //     />
-  //     <View style={styles.fab}>
-  //       <Pressable
-  //         onPress={() => navigation.navigate("CreateEvent")}
-  //         style={({ pressed }) => ({
-  //           opacity: pressed ? 0.5 : 1,
-  //         })}>
-  //         <FontAwesome size={30} name="plus" color="white" />
-  //       </Pressable>
-  //     </View>
-  //   </Drawer>
-  // ) : (
-  // return <Text>No Events Found</Text>;
-  // );
+  return (
+    <Drawer
+      open={drawerIsOpen}
+      onOpen={() => {
+        // navigation.setParams({ drawerIsOpen: true });
+      }}
+      onClose={() => {
+        // navigation.setParams({ drawerIsOpen: false });
+      }}
+      drawerType="front"
+      renderDrawerContent={() => <CalendarsScreen />}>
+      <FlatList
+        data={[...events.values()].sort((a, b) =>
+          a.date.getTime() > b.date.getTime() ? 1 : -1
+        )}
+        renderItem={calEvent => <Item calEvent={calEvent.item} />}
+        keyExtractor={item => item.eventId}
+      />
+      <View style={styles.fab}>
+        <Pressable
+          onPress={() => navigation.navigate("CreateEvent")}
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.5 : 1,
+          })}>
+          <FontAwesome size={30} name="plus" color="white" />
+        </Pressable>
+      </View>
+    </Drawer>
+  );
 
   // TODO: Split sorted list into Past and Future Events
 }

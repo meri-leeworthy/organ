@@ -105,6 +105,15 @@ export default function useMatrixClient(): {
           event.getSender(),
           JSON.stringify(event.getContent())
         );
+        dispatch({
+          type: "ADD_MATRIX_EVENT",
+          name: event.getContent().name,
+          eventId: event.getId(),
+          date: new Date(event.getContent().date),
+          description: event.getContent().description,
+          venue: event.getContent().venue,
+          calendarId: room.roomId,
+        });
       }
     );
     if (clientSyncState === null || "STOPPED") localClient.startClient();
