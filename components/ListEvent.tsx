@@ -10,7 +10,7 @@ export default function ListEvent({
 }) {
   return (
     <View style={styles.event}>
-      <Text>{calEvent.name}</Text>
+      <Text style={styles.eventName}>{calEvent.name}</Text>
       <Text>{calEvent.date.toDateString()}</Text>
     </View>
   );
@@ -20,14 +20,19 @@ const styles = StyleSheet.create({
   event: {
     // flex: 1,
     display: "flex",
-    height: 90,
+    // height: 90,
     alignItems: "flex-start",
     justifyContent: "flex-start",
     padding: 10,
-    borderStyle: "solid",
-    borderColor: "#aaaaaa",
-    borderWidth: 1,
-    margin: 10,
-    borderRadius: 10,
+    // borderStyle: "solid",
+    // borderColor: "#aaaaaa",
+    // borderWidth: 1,
+    margin: 0,
+    borderRadius: 0,
+    backgroundColor: "transparent",
+  },
+  eventName: {
+    fontSize: 20,
+    fontFamily: "work-sans",
   },
 });

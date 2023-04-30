@@ -18,6 +18,9 @@ import LoginScreen from "../screens/LoginScreen";
 import NotFoundScreen from "../screens/NotFoundScreen";
 import EventsScreen from "../screens/EventsScreen";
 import {
+  MatrixCalendarEvent,
+  MatrixEventID,
+  MatrixRoom,
   MatrixRoomList,
   RootStackParamList,
   RootStackScreenProps,
@@ -32,21 +35,26 @@ import CreateEventScreen from "../screens/CreateEventScreen";
 // console.log(parsedIcal);
 
 export default function Navigation({
-  matrixRooms,
+  initialState,
   colorScheme,
 }: {
   colorScheme: ColorSchemeName;
-  matrixRooms: MatrixRoomList;
+  initialState: {
+    matrixRoomIds: MatrixRoomList;
+    events: Map<MatrixEventID, MatrixCalendarEvent>;
+    rooms: Map<string, MatrixRoom>;
+  };
 }) {
-  console.log("nav index matrixRooms: ", matrixRooms);
+  const { matrixRoomIds, rooms: calendars, events } = initialState;
+  console.log("nav index matrixRooms: ", matrixRoomIds);
   return (
     <StateProvider
       reducer={reducer}
       initialState={{
-        calendars: new Map(),
+        calendars,
         client: undefined,
-        matrixRooms,
-        events: new Map(),
+        matrixRoomIds,
+        events,
       }}>
       <NavigationContainer
         // linking={LinkingConfiguration}

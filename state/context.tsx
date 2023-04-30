@@ -20,7 +20,7 @@ export const StateContext = createContext<
   {
     calendars: new Map(),
     client: undefined,
-    matrixRooms: new Set(),
+    matrixRoomIds: new Set(),
     events: new Map(),
   },
   () => null,

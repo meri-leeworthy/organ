@@ -46,8 +46,6 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
         return state;
       }
 
-      // maybe instead of useMatrixClient we should be putting the rooms in the store here
-
       // this is where you would want to check the room to see if it has any calEvents?
 
       return {

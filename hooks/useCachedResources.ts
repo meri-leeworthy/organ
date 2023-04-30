@@ -3,12 +3,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
-import { MatrixRoomList } from "../types";
+import {
+  MatrixCalendarEvent,
+  MatrixEventID,
+  MatrixRoom,
+  MatrixRoomList,
+} from "../types";
 import { getAsyncStorage } from "../state/reducers";
 
 export default function useCachedResources() {
   const [isLoadingComplete, setLoadingComplete] = useState(false);
-  const [matrixRooms, setMatrixRooms] = useState<MatrixRoomList>(new Set());
+  const [matrixRoomIds, setMatrixRoomIds] = useState<MatrixRoomList>(new Set());
+  const [rooms, setRooms] = useState<Map<string, MatrixRoom>>(new Map()); //
+  const [events, setEvents] = useState<Map<MatrixEventID, MatrixCalendarEvent>>(
+    new Map()
+  );
 
   // Load any resources or data that we need prior to rendering the app
   useEffect(() => {
@@ -33,20 +42,27 @@ export default function useCachedResources() {
 
         if (!parsedMatrixRooms) return;
 
-        if (!Array.isArray(parsedMatrixRooms))
-          throw new Error("Retrieved data is not an array");
-        if (
-          parsedMatrixRooms.some(
-            (room: unknown) =>
-              !room ||
-              typeof room !== "object" ||
-              !("roomId" in room) ||
-              !("roomName" in room)
-          )
-        )
-          throw new Error("Retrieved data is not MatrixRoomList");
+        setMatrixRoomIds(new Set(parsedMatrixRooms));
 
-        setMatrixRooms(new Set(parsedMatrixRooms));
+        // now we want to fetch each room and populate the calendars
+
+        parsedMatrixRooms.forEach(async (roomId: string) => {
+          const parsedMatrixRoom = await getAsyncStorage(roomId);
+          if (!parsedMatrixRoom || !("events" in parsedMatrixRoom)) return;
+          const parsedEvents = async () =>
+            Promise.all(
+              [...parsedMatrixRoom.events.values()].map(async eventId => {
+                const event = await getAsyncStorage(eventId);
+                if (!event) throw new Error("Event not found");
+                return event as MatrixCalendarEvent;
+              })
+            );
+          const parsedEventsMap = new Map(Object.entries(await parsedEvents()));
+          setEvents(prevEvents => new Map([...prevEvents, ...parsedEventsMap]));
+          setRooms(prevRooms =>
+            new Map(prevRooms).set(roomId, parsedMatrixRoom)
+          );
+        });
       } catch (e) {
         // We might want to provide this error information to an error reporting service
         console.warn(e);
@@ -59,5 +75,5 @@ export default function useCachedResources() {
     loadResourcesAndDataAsync();
   }, []);
 
-  return { isLoadingComplete, matrixRooms };
+  return { isLoadingComplete, matrixRoomIds, events, rooms };
 }

@@ -58,6 +58,7 @@ export default function EventsScreen({
         )}
         renderItem={calEvent => <Item calEvent={calEvent.item} />}
         keyExtractor={item => item.eventId}
+        style={styles.eventsList}
       />
       <View style={styles.fab}>
         <Pressable
@@ -78,6 +79,9 @@ const styles = StyleSheet.create({
   container: {
     // flex: 1,
     // overflow: "scroll",
+  },
+  eventsList: {
+    backgroundColor: "#fff",
   },
   fab: {
     position: "absolute",

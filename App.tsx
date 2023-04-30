@@ -7,7 +7,7 @@ import useColorScheme from "./hooks/useColorScheme";
 import Navigation from "./navigation";
 
 export default function App() {
-  const { isLoadingComplete, matrixRooms } = useCachedResources();
+  const { isLoadingComplete, ...initialState } = useCachedResources();
   const colorScheme = useColorScheme();
 
   if (!isLoadingComplete) {
@@ -15,7 +15,7 @@ export default function App() {
   } else {
     return (
       <SafeAreaProvider>
-        <Navigation colorScheme={colorScheme} matrixRooms={matrixRooms} />
+        <Navigation colorScheme={colorScheme} initialState={initialState} />
         <StatusBar />
       </SafeAreaProvider>
     );
