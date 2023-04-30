@@ -65,7 +65,7 @@ type DirectoryRadicalEventV1 = {
 export type MatrixCalendarEvent = DirectoryRadicalEventV1;
 
 export type MatrixRoom = {
-  events: Set<MatrixEventID>;
+  events: Set<MatrixEventID> | {};
   roomName: string;
   roomId: MatrixRoomID;
   isCalendar: boolean;

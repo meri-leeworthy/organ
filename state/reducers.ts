@@ -21,6 +21,10 @@ export async function getAsyncStorage<T extends AsyncStorageKey>(
   return value ? JSON.parse(value) : null;
 }
 
+export function valuesOrEmptyArray(maybeSet: Set<any> | {}) {
+  return maybeSet instanceof Set ? [...maybeSet.values()] : [];
+}
+
 export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
   switch (action.type) {
     case "SET_CLIENT":
@@ -85,10 +89,11 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
 
       const calendar = state.calendars.get(action.calendarId)!;
       // if the calendar doesn't exist something is wrong... fix me
+
       const newCalendars = state.calendars.has(action.calendarId)
         ? new Map(state.calendars).set(action.calendarId, {
             ...calendar,
-            events: new Set(calendar.events?.values() || null).add(
+            events: new Set(valuesOrEmptyArray(calendar.events)).add(
               action.eventId
             ),
           })
@@ -120,7 +125,7 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
       events.delete(action.eventId);
       const calendarWithDeletedEvent = state.calendars.get(calendarId)!;
       const eventsWithoutEvent = new Set(
-        calendarWithDeletedEvent.events?.values() || null
+        valuesOrEmptyArray(calendarWithDeletedEvent.events)
       );
       eventsWithoutEvent.delete(action.eventId);
       const calendars = new Map(state.calendars).set(calendarId, {

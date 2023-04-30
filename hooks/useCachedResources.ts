@@ -1,5 +1,4 @@
 import { FontAwesome } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
@@ -9,7 +8,7 @@ import {
   MatrixRoom,
   MatrixRoomList,
 } from "../types";
-import { getAsyncStorage } from "../state/reducers";
+import { getAsyncStorage, valuesOrEmptyArray } from "../state/reducers";
 
 export default function useCachedResources() {
   const [isLoadingComplete, setLoadingComplete] = useState(false);
@@ -23,7 +22,7 @@ export default function useCachedResources() {
   useEffect(() => {
     async function loadResourcesAndDataAsync() {
       try {
-        SplashScreen.preventAutoHideAsync();
+        // SplashScreen.preventAutoHideAsync();
 
         // Load fonts
         await Font.loadAsync({
@@ -48,10 +47,11 @@ export default function useCachedResources() {
 
         parsedMatrixRooms.forEach(async (roomId: string) => {
           const parsedMatrixRoom = await getAsyncStorage(roomId);
+          console.log(`parsedMatrixRoom: ${JSON.stringify(parsedMatrixRoom)}`);
           if (!parsedMatrixRoom || !("events" in parsedMatrixRoom)) return;
           const parsedEvents = async () =>
             Promise.all(
-              [...parsedMatrixRoom.events.values()].map(async eventId => {
+              valuesOrEmptyArray(parsedMatrixRoom.events).map(async eventId => {
                 const event = await getAsyncStorage(eventId);
                 if (!event) throw new Error("Event not found");
                 return event as MatrixCalendarEvent;
@@ -68,7 +68,7 @@ export default function useCachedResources() {
         console.warn(e);
       } finally {
         setLoadingComplete(true);
-        SplashScreen.hideAsync();
+        // SplashScreen.hideAsync();
       }
     }
 
