@@ -47,12 +47,11 @@ export type RootStackScreenProps<Screen extends keyof RootStackParamList> =
 //     NativeStackScreenProps<RootStackParamList>
 //   >;
 
-export type MatrixRoom = {
-  roomName: string;
-  roomId: MatrixRoomID;
-};
-
-export type MatrixRoomList = MatrixRoom[];
+// type MatrixRoomID = `!${string}:${string}`;
+type MatrixRoomID = string;
+type CalendarID = MatrixRoomID;
+// type MatrixEventID = `$${string}`;
+export type MatrixEventID = string;
 
 type DirectoryRadicalEventV1 = {
   date: Date;
@@ -60,15 +59,19 @@ type DirectoryRadicalEventV1 = {
   description: string;
   venue: string;
   eventId: MatrixEventID;
+  calendarId: CalendarID;
 };
 
 export type MatrixCalendarEvent = DirectoryRadicalEventV1;
 
-type MatrixEventID = string;
-
-export type MatrixCalendar = MatrixRoom & {
+export type MatrixRoom = {
   events: Set<MatrixEventID>;
+  roomName: string;
+  roomId: MatrixRoomID;
+  isCalendar: boolean;
 };
+
+export type MatrixRoomList = Set<MatrixRoomID>;
 
 // export type ICalendar = {
 //   calendar: TreeType;
@@ -76,9 +79,7 @@ export type MatrixCalendar = MatrixRoom & {
 //   name: string;
 // };
 
-type MatrixRoomID = string;
-type Calendar = MatrixCalendar;
-type CalendarID = MatrixRoomID;
+type Calendar = MatrixRoom;
 
 export type OrganGlobalState = {
   calendars: Map<CalendarID, Calendar>;
@@ -95,8 +96,16 @@ export type Action =
   | DataAction<{ client: MatrixClient }, "SET_CLIENT">
   | DataAction<{ matrixRooms: MatrixRoomList }, "SET_MATRIX_ROOMS">
   // | DataAction<ICalendar, "ADD_ICALENDAR">
-  | DataAction<MatrixCalendar, "ADD_MATRIX_CALENDAR">
-  | (DataAction<MatrixCalendarEvent, "ADD_MATRIX_EVENT"> & {
-      calendarId: CalendarID;
-      eventId: MatrixEventID;
-    });
+  | DataAction<MatrixRoom, "ADD_MATRIX_ROOM">
+  | DataAction<MatrixRoom, "UPDATE_MATRIX_ROOM">
+  | DataAction<{ roomId: MatrixRoomID }, "DELETE_MATRIX_ROOM">
+  | DataAction<MatrixCalendarEvent, "ADD_MATRIX_EVENT">
+  | DataAction<MatrixCalendarEvent, "UPDATE_MATRIX_EVENT">
+  | DataAction<{ eventId: MatrixEventID }, "DELETE_MATRIX_EVENT">;
+
+export type AsyncStorageKey = "matrixRooms" | MatrixRoomID | MatrixEventID;
+export type AsyncStorageValue<T> = T extends "matrixRooms"
+  ? MatrixRoomID[]
+  : T extends MatrixRoomID | MatrixEventID
+  ? MatrixRoom | MatrixCalendarEvent
+  : never;

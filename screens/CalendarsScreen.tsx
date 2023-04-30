@@ -18,7 +18,7 @@ const URL_SCHEME = /^https?:\/\/[^\s/$.?#].[^\s]*$/;
 type UrlType = "none" | "matrix" | "ical";
 
 export default function CalendarsScreen() {
-  const [{ calendars, matrixRooms }, dispatch] = useStateValue();
+  const [{ calendars }, dispatch] = useStateValue();
   const [url, setUrl] = useState("");
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,14 +75,15 @@ export default function CalendarsScreen() {
 
       console.log("ROOM ID", roomId);
 
-      const room = matrixRooms.find(r => r.roomId === roomId);
+      const room = calendars.get(roomId);
       console.log("ROOM", room);
       if (room) {
         dispatch({
-          type: "ADD_MATRIX_CALENDAR",
+          type: "ADD_MATRIX_ROOM",
           roomId,
           roomName: room.roomName,
           events: new Set(),
+          isCalendar: true,
         });
         setLoading(false);
         return;
@@ -111,10 +112,11 @@ export default function CalendarsScreen() {
           onPress: () => {
             console.log("OK Pressed, adding room to calendars");
             dispatch({
-              type: "ADD_MATRIX_CALENDAR",
+              type: "ADD_MATRIX_ROOM",
               roomId: room.roomId,
               roomName: room.roomName,
               events: new Set(),
+              isCalendar: true,
             });
           },
         },
@@ -132,19 +134,23 @@ export default function CalendarsScreen() {
       {isLoading && <Text>Loading...</Text>}
       {error && <Text style={{ color: "red" }}>{error}</Text>}
       <Text style={styles.heading}>My Calendars</Text>
-      {[...calendars.values()].map(calendar => (
-        <View key={calendar.roomId} style={styles.calendar}>
-          <Text>{calendar.roomName}</Text>
-        </View>
-      ))}
-      <Text style={styles.heading}>My Matrix Rooms</Text>
-      {matrixRooms.map((room, i) => (
-        <Pressable key={i} onPress={() => addRoomToCalendarsAlert(room)}>
-          <View style={styles.calendar}>
-            <Text>{room.roomName}</Text>
+      {[...calendars.values()]
+        .filter(c => c.isCalendar)
+        .map(calendar => (
+          <View key={calendar.roomId} style={styles.calendar}>
+            <Text>{calendar.roomName}</Text>
           </View>
-        </Pressable>
-      ))}
+        ))}
+      <Text style={styles.heading}>My Matrix Rooms</Text>
+      {[...calendars.values()]
+        .filter(c => !c.isCalendar)
+        .map((room, i) => (
+          <Pressable key={i} onPress={() => addRoomToCalendarsAlert(room)}>
+            <View style={styles.calendar}>
+              <Text>{room.roomName}</Text>
+            </View>
+          </Pressable>
+        ))}
     </View>
   );
 }

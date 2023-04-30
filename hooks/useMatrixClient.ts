@@ -1,10 +1,8 @@
 import * as sdk from "matrix-js-sdk";
 import { useStateValue } from "../state/context";
 import * as SecureStore from "expo-secure-store";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import { useRetry } from "./useRetry";
-import { MatrixRoomList } from "../types";
 
 type ClientSyncState =
   | null
@@ -24,7 +22,7 @@ export default function useMatrixClient(): {
   const [localClient, setLocalClient] = useState<sdk.MatrixClient | undefined>(
     client
   );
-  const [localClientChangeFlag, setLocalClientChangeFlag] = useState(false); //this is a hack to force a rerender when the client changes
+  const [localClientChangeFlag, setLocalClientChangeFlag] = useState(false); //this is to force a rerender when the client changes, because of shallow object equality
   const [clientSyncState, setClientSyncState] = useState<ClientSyncState>(null);
   const attemptCount = useRetry(3);
 
@@ -43,13 +41,19 @@ export default function useMatrixClient(): {
   useEffect(() => {
     if (!client) return;
     const rooms = client.getRooms();
-    const roomIds: MatrixRoomList | undefined = rooms?.map(room => {
-      return { roomId: room.roomId, roomName: room.name };
-    });
+    const roomIds = new Set(rooms?.map(room => room.roomId));
 
-    if (roomIds && roomIds.length > 0) {
-      AsyncStorage.setItem("matrixRooms", JSON.stringify(roomIds)); //could throw
+    if (roomIds && rooms.length > 0) {
       dispatch({ type: "SET_MATRIX_ROOMS", matrixRooms: roomIds });
+      rooms.forEach(room => {
+        dispatch({
+          type: "ADD_MATRIX_ROOM",
+          roomId: room.roomId,
+          roomName: room.name,
+          events: new Set(),
+          isCalendar: false,
+        });
+      });
     }
   }, [attemptCount, clientSyncState]);
 
@@ -81,11 +85,7 @@ export default function useMatrixClient(): {
   }, [client, localClient]);
 
   useEffect(() => {
-    if (!localClient) return;
-    if (!localClient.isLoggedIn()) {
-      console.log("loggint in? ", localClient.isLoggedIn());
-      return;
-    }
+    if (!localClient || !localClient.isLoggedIn()) return;
 
     console.log(`Logged in as ${localClient.getUserId()}`);
 

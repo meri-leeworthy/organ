@@ -4,10 +4,11 @@ import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { MatrixRoomList } from "../types";
+import { getAsyncStorage } from "../state/reducers";
 
 export default function useCachedResources() {
   const [isLoadingComplete, setLoadingComplete] = useState(false);
-  const [matrixRooms, setMatrixRooms] = useState<MatrixRoomList>([]);
+  const [matrixRooms, setMatrixRooms] = useState<MatrixRoomList>(new Set());
 
   // Load any resources or data that we need prior to rendering the app
   useEffect(() => {
@@ -21,12 +22,9 @@ export default function useCachedResources() {
           "space-mono": require("../assets/fonts/SpaceMono-Regular.ttf"),
         });
 
-        const storedMatrixRooms = await AsyncStorage.getItem("matrixRooms");
+        const parsedMatrixRooms = await getAsyncStorage("matrixRooms");
 
-        // if (!storedMatrixRooms) throw new Error("no stored matrix rooms");
-        if (!storedMatrixRooms) return;
-
-        const parsedMatrixRooms: unknown = await JSON.parse(storedMatrixRooms);
+        if (!parsedMatrixRooms) return;
 
         if (!Array.isArray(parsedMatrixRooms))
           throw new Error("Retrieved data is not an array");
@@ -41,7 +39,7 @@ export default function useCachedResources() {
         )
           throw new Error("Retrieved data is not MatrixRoomList");
 
-        setMatrixRooms(parsedMatrixRooms);
+        setMatrixRooms(new Set(parsedMatrixRooms));
       } catch (e) {
         // We might want to provide this error information to an error reporting service
         console.warn(e);
