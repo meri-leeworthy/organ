@@ -84,7 +84,7 @@ type Calendar = MatrixRoom;
 export type OrganGlobalState = {
   calendars: Map<CalendarID, Calendar>;
   client: MatrixClient | undefined;
-  matrixRooms: MatrixRoomList;
+  matrixRoomIds: MatrixRoomList;
   events: Map<MatrixEventID, MatrixCalendarEvent>;
 };
 
