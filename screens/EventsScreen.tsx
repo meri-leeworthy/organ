@@ -63,15 +63,6 @@ export default function EventsScreen({
         keyExtractor={item => item.eventId}
         style={styles.eventsList}
       />
-      <View style={styles.fab}>
-        <Pressable
-          onPress={() => navigation.navigate("CreateEvent")}
-          style={({ pressed }) => ({
-            opacity: pressed ? 0.5 : 1,
-          })}>
-          <FontAwesome size={30} name="plus" color="white" />
-        </Pressable>
-      </View>
     </>
     // </Drawer>
   );
@@ -86,14 +77,6 @@ const styles = StyleSheet.create({
   },
   eventsList: {
     backgroundColor: "#fff",
-  },
-  fab: {
-    position: "absolute",
-    bottom: 20,
-    right: 0,
-    borderRadius: 20,
-    margin: 16,
-    backgroundColor: "#3F51B5",
-    padding: 20,
+    paddingTop: 155,
   },
 });

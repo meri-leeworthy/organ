@@ -23,6 +23,7 @@ import EventScreen from "../screens/EventScreen";
 // import { parsedIcal } from "../state/fileSample";
 import CreateEventScreen from "../screens/CreateEventScreen";
 import { useStateValue } from "../state/context";
+import { View } from "../components/Themed";
 
 // console.log(parsedIcal);
 
@@ -75,23 +76,53 @@ function RootNavigator() {
           //     />
           //   </Pressable>
           // ),
+          headerLargeTitle: true,
+          headerLargeTitleStyle: {
+            color: Colors[colorScheme].text,
+            fontFamily: "work-sans-semibold",
+          },
+          headerTitleStyle: {
+            color: Colors[colorScheme].text,
+            fontFamily: "work-sans-semibold",
+          },
+          headerTitleAlign: "left",
           headerRight: () => (
-            <Pressable
-              onPress={() =>
-                navigation.navigate("Account", {
-                  isAuthenticated: client?.isLoggedIn() || false,
-                })
-              }
-              style={({ pressed }) => ({
-                opacity: pressed ? 0.5 : 1,
-              })}>
-              <FontAwesome
-                name="user-circle"
-                size={25}
-                color={Colors[colorScheme].text}
-                style={{ marginRight: 15 }}
-              />
-            </Pressable>
+            <View
+              style={{
+                // flexGrow: 1,
+                // borderWidth: 1,
+                // flexWrap: "nowrap",
+                width: 60,
+                // height: "100%",
+                // alignItems: "flex-end",
+                // justifyContent: "center",
+                flexDirection: "row",
+              }}>
+              <Pressable
+                onPress={() => navigation.navigate("CreateEvent")}
+                style={({ pressed }) => ({
+                  opacity: pressed ? 0.5 : 1,
+                  marginRight: 15,
+                })}>
+                <FontAwesome size={25} name="plus" />
+              </Pressable>
+              <Pressable
+                onPress={() =>
+                  navigation.navigate("Account", {
+                    isAuthenticated: client?.isLoggedIn() || false,
+                  })
+                }
+                style={({ pressed }) => ({
+                  opacity: pressed ? 0.5 : 1,
+                })}>
+                <FontAwesome
+                  name="user-circle"
+                  size={25}
+                  color={Colors[colorScheme].text}
+                  style={{}}
+                />
+              </Pressable>
+            </View>
           ),
         })}
       />
