@@ -8,7 +8,11 @@ import {
   MatrixRoom,
   MatrixRoomList,
 } from "../types";
-import { getAsyncStorage, valuesOrEmptyArray } from "../state/reducers";
+import {
+  getAsyncStorage,
+  replacer,
+  valuesOrEmptyArray,
+} from "../state/reducers";
 
 export default function useCachedResources() {
   const [isLoadingComplete, setLoadingComplete] = useState(false);
@@ -37,19 +41,21 @@ export default function useCachedResources() {
           "work-sans-italic": require("../assets/fonts/worksans/WorkSans-Italic.ttf"),
         });
 
-        const parsedMatrixRooms = await getAsyncStorage("matrixRooms");
+        const parsedMatrixRooms = await getAsyncStorage("matrixRoomIds");
 
         if (!parsedMatrixRooms) return;
 
         setMatrixRoomIds(new Set(parsedMatrixRooms));
 
-        // now we want to fetch each room and populate the calendars
-
         parsedMatrixRooms.forEach(async (roomId: string) => {
           const parsedMatrixRoom = await getAsyncStorage(roomId);
-          console.log(`parsedMatrixRoom: ${JSON.stringify(parsedMatrixRoom)}`);
+          console.log(
+            `parsedMatrixRoom: ${JSON.stringify(parsedMatrixRoom, replacer)}`
+          );
+
           if (!parsedMatrixRoom || !("events" in parsedMatrixRoom)) return;
-          const parsedEvents = async () =>
+
+          const getStoredEvents = async () =>
             Promise.all(
               valuesOrEmptyArray(parsedMatrixRoom.events).map(async eventId => {
                 const event = await getAsyncStorage(eventId);
@@ -57,17 +63,26 @@ export default function useCachedResources() {
                 return event as MatrixCalendarEvent;
               })
             );
-          const parsedEventsMap = new Map(Object.entries(await parsedEvents()));
-          setEvents(prevEvents => new Map([...prevEvents, ...parsedEventsMap]));
+          const storedEvents: [string, MatrixCalendarEvent][] = (
+            await getStoredEvents()
+          ).map(event => [event.eventId, event]);
+          console.log(storedEvents);
+          const eventsMap = new Map(storedEvents);
+
+          console.log("eventsMap", eventsMap);
+          console.log("new map", new Map([...events, ...eventsMap]));
+
+          setEvents(prevEvents => new Map([...prevEvents, ...eventsMap]));
           setRooms(prevRooms =>
             new Map(prevRooms).set(roomId, parsedMatrixRoom)
           );
+          setLoadingComplete(true);
         });
       } catch (e) {
         // We might want to provide this error information to an error reporting service
         console.warn(e);
       } finally {
-        setLoadingComplete(true);
+        // setLoadingComplete(true);
         // SplashScreen.hideAsync();
       }
     }

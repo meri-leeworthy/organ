@@ -25,9 +25,11 @@ export default function EventsScreen({
   route,
   navigation,
 }: RootStackScreenProps<"Root">) {
-  const [{ calendars, events }] = useStateValue();
+  const [{ events }] = useStateValue();
   const { drawerIsOpen } = route.params;
-  const { client } = useMatrixClient();
+  useMatrixClient();
+
+  console.log(events);
 
   const Item = ({ calEvent }: { calEvent: MatrixCalendarEvent }) => (
     <Pressable
@@ -42,16 +44,17 @@ export default function EventsScreen({
   );
 
   return (
-    <Drawer
-      open={drawerIsOpen}
-      onOpen={() => {
-        // navigation.setParams({ drawerIsOpen: true });
-      }}
-      onClose={() => {
-        // navigation.setParams({ drawerIsOpen: false });
-      }}
-      drawerType="front"
-      renderDrawerContent={() => <CalendarsScreen />}>
+    // <Drawer
+    //   open={drawerIsOpen}
+    //   onOpen={() => {
+    //     // navigation.setParams({ drawerIsOpen: true });
+    //   }}
+    //   onClose={() => {
+    //     // navigation.setParams({ drawerIsOpen: false });
+    //   }}
+    //   drawerType="front"
+    //   renderDrawerContent={() => <CalendarsScreen />}>
+    <>
       <FlatList
         data={[...events.values()].sort((a, b) =>
           a.date.getTime() > b.date.getTime() ? 1 : -1
@@ -69,7 +72,8 @@ export default function EventsScreen({
           <FontAwesome size={30} name="plus" color="white" />
         </Pressable>
       </View>
-    </Drawer>
+    </>
+    // </Drawer>
   );
 
   // TODO: Split sorted list into Past and Future Events

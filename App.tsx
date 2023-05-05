@@ -5,9 +5,66 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import useCachedResources from "./hooks/useCachedResources";
 import useColorScheme from "./hooks/useColorScheme";
 import Navigation from "./navigation";
+import { StateProvider } from "./state/context";
+import { reducer } from "./state/reducers";
+
+import { EventEmitter } from "fbemitter";
+
+// class Document {
+//   emitter: any;
+
+//   constructor() {
+//     this.emitter = new EventEmitter();
+//     this.addEventListener = this.addEventListener.bind(this);
+//     this.removeEventListener = this.removeEventListener.bind(this);
+//     this._checkEmitter = this._checkEmitter.bind(this);
+//   }
+
+//   createElement(tagName: any) {
+//     return {};
+//   }
+
+//   _checkEmitter() {
+//     if (
+//       !this.emitter ||
+//       !(
+//         this.emitter.on ||
+//         this.emitter.addEventListener ||
+//         this.emitter.addListener
+//       )
+//     ) {
+//       this.emitter = new EventEmitter();
+//     }
+//   }
+
+//   addEventListener(eventName: any, listener: any) {
+//     this._checkEmitter();
+//     if (this.emitter.on) {
+//       this.emitter.on(eventName, listener);
+//     } else if (this.emitter.addEventListener) {
+//       this.emitter.addEventListener(eventName, listener);
+//     } else if (this.emitter.addListener) {
+//       this.emitter.addListener(eventName, listener);
+//     }
+//   }
+
+//   removeEventListener(eventName: any, listener: any) {
+//     this._checkEmitter();
+//     if (this.emitter.off) {
+//       this.emitter.off(eventName, listener);
+//     } else if (this.emitter.removeEventListener) {
+//       this.emitter.removeEventListener(eventName, listener);
+//     } else if (this.emitter.removeListener) {
+//       this.emitter.removeListener(eventName, listener);
+//     }
+//   }
+// }
+
+// window.document = window.document || new Document();
 
 export default function App() {
   const { isLoadingComplete, ...initialState } = useCachedResources();
+  const { matrixRoomIds, rooms: calendars, events } = initialState;
   const colorScheme = useColorScheme();
 
   if (!isLoadingComplete) {
@@ -15,8 +72,17 @@ export default function App() {
   } else {
     return (
       <SafeAreaProvider>
-        <Navigation colorScheme={colorScheme} initialState={initialState} />
-        <StatusBar />
+        <StateProvider
+          reducer={reducer}
+          initialState={{
+            calendars,
+            client: undefined,
+            matrixRoomIds,
+            events,
+          }}>
+          <Navigation colorScheme={colorScheme} />
+          <StatusBar />
+        </StateProvider>
       </SafeAreaProvider>
     );
   }

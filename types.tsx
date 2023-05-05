@@ -27,7 +27,7 @@ declare global {
 
 export type RootStackParamList = {
   Root: { drawerIsOpen: boolean };
-  Login: undefined;
+  Account: { isAuthenticated: boolean };
   CreateEvent: undefined;
   NotFound: undefined;
   Event: { eventId: string; eventName: string };
@@ -103,8 +103,8 @@ export type Action =
   | DataAction<MatrixCalendarEvent, "UPDATE_MATRIX_EVENT">
   | DataAction<{ eventId: MatrixEventID }, "DELETE_MATRIX_EVENT">;
 
-export type AsyncStorageKey = "matrixRooms" | MatrixRoomID | MatrixEventID;
-export type AsyncStorageValue<T> = T extends "matrixRooms"
+export type AsyncStorageKey = "matrixRoomIds" | MatrixRoomID | MatrixEventID;
+export type AsyncStorageValue<T> = T extends "matrixRoomIds"
   ? MatrixRoomID[]
   : T extends MatrixRoomID | MatrixEventID
   ? MatrixRoom | MatrixCalendarEvent

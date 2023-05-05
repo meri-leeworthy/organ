@@ -24,7 +24,7 @@ export default function useMatrixClient(): {
   );
   const [localClientChangeFlag, setLocalClientChangeFlag] = useState(false); //this is to force a rerender when the client changes, because of shallow object equality
   const [clientSyncState, setClientSyncState] = useState<ClientSyncState>(null);
-  const attemptCount = useRetry(3);
+  // const attemptCount = useRetry(3);
 
   function setClient(newClient: sdk.MatrixClient) {
     newClient.once(sdk.ClientEvent.Sync, (state: ClientSyncState) =>
@@ -55,7 +55,7 @@ export default function useMatrixClient(): {
         });
       });
     }
-  }, [attemptCount, clientSyncState]);
+  }, [clientSyncState]);
 
   useEffect(() => {
     async function setClientWithTokenIfExists() {
@@ -123,7 +123,7 @@ export default function useMatrixClient(): {
   }, [localClient, clientSyncState, localClientChangeFlag]);
 
   useEffect(() => {
-    setLocalClientChangeFlag(false);
+    if (localClientChangeFlag) setLocalClientChangeFlag(false);
   }, [localClientChangeFlag]);
 
   return { client: localClient, setClient, clientSyncState };

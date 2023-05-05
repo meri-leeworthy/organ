@@ -7,18 +7,65 @@ import {
 } from "../types";
 import { Reducer } from "react";
 
+export function replacer(key: unknown, value: unknown) {
+  if (value instanceof Map) {
+    console.log(`replacing map ${key} with ${value}`);
+    console.log(`as... ${Array.from(value.entries())}`);
+    return {
+      dataType: "Map",
+      value: Array.from(value.entries()),
+    };
+  } else if (value instanceof Set) {
+    console.log(`replacing set ${key} with ${value}`);
+    console.log(`as... ${Array.from(value.values())}`);
+    return {
+      dataType: "Set",
+      value: Array.from(value.values()),
+    };
+  }
+  return value;
+}
+
+export function reviver(key: unknown, value: unknown) {
+  if (typeof value === "object" && value !== null) {
+    if (
+      "dataType" in value &&
+      "value" in value &&
+      value.dataType === "Map" &&
+      Array.isArray(value.value)
+    ) {
+      return new Map(value.value);
+    } else if (
+      "dataType" in value &&
+      "value" in value &&
+      value.dataType === "Set" &&
+      Array.isArray(value.value)
+    ) {
+      return new Set(value.value);
+    } else if ("date" in value && typeof value.date === "string") {
+      return {
+        ...value,
+        date: new Date(value.date),
+      };
+    }
+  }
+  return value;
+}
+
 export async function setAsyncStorage<T extends AsyncStorageKey>(
   key: T,
   value: AsyncStorageValue<T>
 ) {
-  return await AsyncStorage.setItem(key, JSON.stringify(value));
+  const stringifiedValue = JSON.stringify(value, replacer);
+  // console.log(`Setting ${key} to ${stringifiedValue}`);
+  return await AsyncStorage.setItem(key, stringifiedValue);
 }
 
 export async function getAsyncStorage<T extends AsyncStorageKey>(
   key: T
 ): Promise<AsyncStorageValue<T> | null> {
   const value = await AsyncStorage.getItem(key);
-  return value ? JSON.parse(value) : null;
+  return value ? JSON.parse(value, reviver) : null;
 }
 
 export function valuesOrEmptyArray(maybeSet: Set<any> | {}) {
@@ -35,7 +82,7 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
 
     case "SET_MATRIX_ROOMS":
       console.log(`Setting matrix rooms`);
-      setAsyncStorage("matrixRooms", [...action.matrixRooms.values()]); //could throw
+      // setAsyncStorage("matrixRooms", [...action.matrixRooms.values()]); //could throw
       return {
         ...state,
         matrixRooms: action.matrixRooms,
@@ -44,7 +91,7 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
     case "ADD_MATRIX_ROOM":
       console.log(`Adding calendar ${action.roomName}`);
       const { type, ...roomAdding } = action;
-      setAsyncStorage(action.roomId, roomAdding);
+      // setAsyncStorage(action.roomId, roomAdding);
       if (state.calendars.has(action.roomId)) {
         console.log(`Calendar already exists`);
         return state;
@@ -65,7 +112,7 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
     case "UPDATE_MATRIX_ROOM":
       console.log(`Setting calendar ${action.roomName}`);
       const { type: ___, ...roomUpdating } = action;
-      setAsyncStorage(action.roomId, roomUpdating);
+      // setAsyncStorage(action.roomId, roomUpdating);
       return {
         ...state,
         calendars: new Map(state.calendars).set(action.roomId, roomUpdating),
@@ -73,7 +120,7 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
 
     case "DELETE_MATRIX_ROOM":
       console.log(`Deleting calendar ${action.roomId}`);
-      AsyncStorage.removeItem(action.roomId);
+      // AsyncStorage.removeItem(action.roomId);
       const calendarsWithoutRoom = new Map(state.calendars);
       calendarsWithoutRoom.delete(action.roomId);
       return {
@@ -85,7 +132,7 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
       console.log(`Adding event ${action.name}`);
 
       const { type: _, ...eventAdding } = action;
-      setAsyncStorage(action.eventId, eventAdding);
+      // setAsyncStorage(action.eventId, eventAdding);
 
       const calendar = state.calendars.get(action.calendarId)!;
       // if the calendar doesn't exist something is wrong... fix me
@@ -98,6 +145,13 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
             ),
           })
         : state.calendars;
+
+      // for (const [key, value] of newCalendars) {
+      //   console.log("storing:", key, value);
+      //   // setAsyncStorage(key, value)
+      //   //   .then(() => console.log("stored"))
+      //   //   .catch(e => console.log(e));
+      // }
 
       return {
         ...state,
@@ -133,7 +187,7 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
         events: eventsWithoutEvent,
       });
 
-      AsyncStorage.removeItem(action.eventId);
+      // AsyncStorage.removeItem(action.eventId);
 
       return {
         ...state,

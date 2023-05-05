@@ -17,51 +17,26 @@ import useColorScheme from "../hooks/useColorScheme";
 import LoginScreen from "../screens/LoginScreen";
 import NotFoundScreen from "../screens/NotFoundScreen";
 import EventsScreen from "../screens/EventsScreen";
-import {
-  MatrixCalendarEvent,
-  MatrixEventID,
-  MatrixRoom,
-  MatrixRoomList,
-  RootStackParamList,
-  RootStackScreenProps,
-} from "../types";
+import { RootStackParamList, RootStackScreenProps } from "../types";
 import LinkingConfiguration from "./LinkingConfiguration";
 import EventScreen from "../screens/EventScreen";
-import { StateProvider } from "../state/context";
-import { reducer } from "../state/reducers";
 // import { parsedIcal } from "../state/fileSample";
 import CreateEventScreen from "../screens/CreateEventScreen";
+import { useStateValue } from "../state/context";
 
 // console.log(parsedIcal);
 
 export default function Navigation({
-  initialState,
   colorScheme,
 }: {
   colorScheme: ColorSchemeName;
-  initialState: {
-    matrixRoomIds: MatrixRoomList;
-    events: Map<MatrixEventID, MatrixCalendarEvent>;
-    rooms: Map<string, MatrixRoom>;
-  };
 }) {
-  const { matrixRoomIds, rooms: calendars, events } = initialState;
-  console.log("nav index matrixRooms: ", matrixRoomIds);
   return (
-    <StateProvider
-      reducer={reducer}
-      initialState={{
-        calendars,
-        client: undefined,
-        matrixRoomIds,
-        events,
-      }}>
-      <NavigationContainer
-        // linking={LinkingConfiguration}
-        theme={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <RootNavigator />
-      </NavigationContainer>
-    </StateProvider>
+    <NavigationContainer
+      // linking={LinkingConfiguration}
+      theme={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <RootNavigator />
+    </NavigationContainer>
   );
 }
 
@@ -73,6 +48,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function RootNavigator() {
   const colorScheme = useColorScheme();
+  const [{ client }] = useStateValue();
   return (
     <Stack.Navigator>
       <Stack.Screen
@@ -80,28 +56,32 @@ function RootNavigator() {
         component={EventsScreen}
         initialParams={{ drawerIsOpen: false }}
         options={({ navigation, route }: RootStackScreenProps<"Root">) => ({
-          title: "My Events",
-          headerLeft: () => (
-            <Pressable
-              onPress={() =>
-                navigation.setParams({
-                  drawerIsOpen: !route.params.drawerIsOpen,
-                })
-              }
-              style={({ pressed }) => ({
-                opacity: pressed ? 0.5 : 1,
-              })}>
-              <FontAwesome
-                name="bars"
-                size={25}
-                color={Colors[colorScheme].text}
-                style={{ marginLeft: 15 }}
-              />
-            </Pressable>
-          ),
+          title: "What's On",
+          // headerLeft: () => (
+          //   <Pressable
+          //     onPress={() =>
+          //       navigation.setParams({
+          //         drawerIsOpen: !route.params.drawerIsOpen,
+          //       })
+          //     }
+          //     style={({ pressed }) => ({
+          //       opacity: pressed ? 0.5 : 1,
+          //     })}>
+          //     <FontAwesome
+          //       name="bars"
+          //       size={25}
+          //       color={Colors[colorScheme].text}
+          //       style={{ marginLeft: 15 }}
+          //     />
+          //   </Pressable>
+          // ),
           headerRight: () => (
             <Pressable
-              onPress={() => navigation.navigate("Login")}
+              onPress={() =>
+                navigation.navigate("Account", {
+                  isAuthenticated: client?.isLoggedIn() || false,
+                })
+              }
               style={({ pressed }) => ({
                 opacity: pressed ? 0.5 : 1,
               })}>
@@ -121,7 +101,16 @@ function RootNavigator() {
         options={{ title: "Oops!" }}
       />
       <Stack.Group screenOptions={{ presentation: "modal" }}>
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen
+          name="Account"
+          component={LoginScreen}
+          options={({
+            navigation,
+            route,
+          }: RootStackScreenProps<"Account">) => ({
+            title: route.params.isAuthenticated ? "My Calendars" : "Login",
+          })}
+        />
         <Stack.Screen
           name="CreateEvent"
           component={CreateEventScreen}
