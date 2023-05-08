@@ -10,8 +10,10 @@ export default function ListEvent({
 }) {
   return (
     <View style={styles.event}>
+      <Text style={styles.eventTime}>
+        {calEvent.date.toLocaleTimeString().slice(0, -3)}
+      </Text>
       <Text style={styles.eventName}>{calEvent.name}</Text>
-      <Text>{calEvent.date.toDateString()}</Text>
     </View>
   );
 }
@@ -21,7 +23,8 @@ const styles = StyleSheet.create({
     // flex: 1,
     display: "flex",
     // height: 90,
-    alignItems: "flex-start",
+    flexDirection: "row",
+    alignItems: "flex-end",
     justifyContent: "flex-start",
     padding: 10,
     // borderStyle: "solid",
@@ -34,5 +37,10 @@ const styles = StyleSheet.create({
   eventName: {
     fontSize: 20,
     fontFamily: "work-sans",
+  },
+  eventTime: {
+    fontSize: 16,
+    fontFamily: "work-sans",
+    marginRight: 10,
   },
 });
