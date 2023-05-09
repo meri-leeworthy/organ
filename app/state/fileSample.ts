@@ -1,6 +1,6 @@
 import { sample } from "../assets/data/sample";
 import { parseIcal } from "../lib/ical";
-import { ICalendar } from "../types";
+import { ICalendar } from "../../types";
 
 export const parsedIcal: ICalendar[] = parseIcal(sample).map(calendar => {
   return {

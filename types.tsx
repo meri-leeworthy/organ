@@ -4,6 +4,7 @@
  */
 
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import { DrawerScreenProps } from "@react-navigation/drawer";
 import {
   CompositeScreenProps,
   NavigatorScreenParams,
@@ -26,7 +27,7 @@ declare global {
 // };
 
 export type RootStackParamList = {
-  Root: { drawerIsOpen: boolean };
+  Drawer: undefined;
   Account: { isAuthenticated: boolean };
   CreateEvent: undefined;
   NotFound: undefined;
@@ -35,6 +36,18 @@ export type RootStackParamList = {
 
 export type RootStackScreenProps<Screen extends keyof RootStackParamList> =
   NativeStackScreenProps<RootStackParamList, Screen>;
+
+export type RootDrawerParamList = {
+  Calendar: undefined;
+  Hosting: undefined;
+  Following: undefined;
+  Explore: undefined;
+  Account: undefined;
+  Settings: undefined;
+};
+
+export type RootDrawerScreenProps<Screen extends keyof RootDrawerParamList> =
+  DrawerScreenProps<RootDrawerParamList, Screen>;
 
 // export type RootTabParamList = {
 //   Events: { drawerIsOpen: boolean };

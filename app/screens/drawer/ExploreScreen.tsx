@@ -1,16 +1,16 @@
 import { StyleSheet, TouchableOpacity } from "react-native";
 
-import { Text, View } from "../components/Themed";
-import { RootStackScreenProps } from "../types";
+import { Text, View } from "../../components/Themed";
+import { RootDrawerParamList, RootDrawerScreenProps } from "../../../types";
 
-export default function NotFoundScreen({
+export function ExploreScreen({
   navigation,
-}: RootStackScreenProps<"NotFound">) {
+}: RootDrawerScreenProps<keyof RootDrawerParamList>) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>This screen doesn't exist.</Text>
+      <Text style={styles.title}>This screen doesn't exist yet.</Text>
       <TouchableOpacity
-        onPress={() => navigation.replace("Root", { drawerIsOpen: false })}
+        onPress={() => navigation.navigate("Following")}
         style={styles.link}>
         <Text style={styles.linkText}>Go to home screen!</Text>
       </TouchableOpacity>

@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import useMatrixClient from "../hooks/useMatrixClient";
 import * as SecureStore from "expo-secure-store";
 import { useNavigation } from "@react-navigation/native";
-import CalendarsScreen from "./CalendarsScreen";
 
 export default function LoginScreen() {
   const [homeserver, setHomeserver] = useState("");
@@ -15,7 +14,6 @@ export default function LoginScreen() {
   const navigation = useNavigation();
 
   if (!client) return <Text>loading...</Text>;
-  if (client.isLoggedIn()) return <CalendarsScreen />;
 
   const handleLogin = async () => {
     const loginflows = await client.loginFlows();

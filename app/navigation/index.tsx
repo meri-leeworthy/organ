@@ -12,18 +12,18 @@ import {
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as React from "react";
 import { ColorSchemeName, Pressable } from "react-native";
-import Colors from "../constants/Colors";
-import useColorScheme from "../hooks/useColorScheme";
-import LoginScreen from "../screens/LoginScreen";
-import NotFoundScreen from "../screens/NotFoundScreen";
-import EventsScreen from "../screens/EventsScreen";
-import { RootStackParamList, RootStackScreenProps } from "../types";
+import Colors from "app/constants/Colors";
+import useColorScheme from "app/hooks/useColorScheme";
+import LoginScreen from "app/screens/LoginScreen";
+import NotFoundScreen from "app/screens/NotFoundScreen";
+import { RootStackParamList, RootStackScreenProps } from "types";
 import LinkingConfiguration from "./LinkingConfiguration";
-import EventScreen from "../screens/EventScreen";
-// import { parsedIcal } from "../state/fileSample";
-import CreateEventScreen from "../screens/CreateEventScreen";
-import { useStateValue } from "../state/context";
-import { View } from "../components/Themed";
+import EventScreen from "app/screens/EventScreen";
+// import { parsedIcal } from "app/state/fileSample";
+import CreateEventScreen from "app/screens/CreateEventScreen";
+import { useStateValue } from "app/state/context";
+import { View } from "app/components/Themed";
+import { RootDrawer } from "app/screens/drawer";
 
 // console.log(parsedIcal);
 
@@ -53,11 +53,11 @@ function RootNavigator() {
   return (
     <Stack.Navigator>
       <Stack.Screen
-        name="Root"
-        component={EventsScreen}
-        initialParams={{ drawerIsOpen: false }}
-        options={({ navigation, route }: RootStackScreenProps<"Root">) => ({
-          title: "What's On",
+        name="Drawer"
+        component={RootDrawer}
+        // initialParams={{ drawerIsOpen: false }}
+        options={({ navigation, route }: RootStackScreenProps<"Drawer">) => ({
+          headerShown: false,
           // headerLeft: () => (
           //   <Pressable
           //     onPress={() =>
@@ -155,14 +155,4 @@ function RootNavigator() {
       />
     </Stack.Navigator>
   );
-}
-
-/**
- * You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
- */
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>["name"];
-  color: string;
-}) {
-  return <FontAwesome size={30} style={{ marginBottom: -3 }} {...props} />;
 }

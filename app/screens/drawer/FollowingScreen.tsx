@@ -1,15 +1,19 @@
 import { FlatList, Pressable, StyleSheet, Button } from "react-native";
-import { Text, View } from "../components/Themed";
-import { MatrixCalendarEvent, RootStackScreenProps } from "../types";
+import { Text, View } from "../../components/Themed";
+import {
+  MatrixCalendarEvent,
+  RootDrawerScreenProps,
+  RootStackScreenProps,
+} from "../../../types";
 // import { IcalEvent, dateSort } from "../lib/ical";
-import ListEvent from "../components/ListEvent";
+import ListEvent from "../../components/ListEvent";
 import { TreeType } from "icalts/dist/src/types";
-import { useStateValue } from "../state/context";
-import useMatrixClient from "../hooks/useMatrixClient";
+import { useStateValue } from "../../state/context";
+import useMatrixClient from "../../hooks/useMatrixClient";
 import { useEffect, useState } from "react";
 // import { useRetry } from "../lib/useRetry";
 import { Drawer } from "react-native-drawer-layout";
-import CalendarsScreen from "./CalendarsScreen";
+import { EditFollowsScreen } from "../EditFollowsScreen";
 import { FontAwesome } from "@expo/vector-icons";
 import { CellContainer, FlashList } from "@shopify/flash-list";
 
@@ -22,12 +26,12 @@ import { CellContainer, FlashList } from "@shopify/flash-list";
 // configurable by the user.  The user should be able to add and remove rooms
 // from the list of calendar rooms.
 
-export default function EventsScreen({
+export function FollowingScreen({
   route,
   navigation,
-}: RootStackScreenProps<"Root">) {
+}: RootDrawerScreenProps<"Following">) {
   const [{ events }] = useStateValue();
-  const { drawerIsOpen } = route.params;
+  // const { drawerIsOpen } = route.params;
   useMatrixClient();
 
   console.log(events);
@@ -35,7 +39,7 @@ export default function EventsScreen({
   const Item = ({ calEvent }: { calEvent: MatrixCalendarEvent }) => (
     <Pressable
       onPress={() =>
-        navigation.navigate("Event", {
+        navigation.getParent()?.navigate("Event", {
           eventId: calEvent.eventId,
           eventName: calEvent.name,
         })
@@ -91,8 +95,8 @@ export default function EventsScreen({
       keyExtractor={item => (typeof item === "string" ? item : item.eventId)}
       // style={styles.eventsList}
       estimatedItemSize={100}
-      ListHeaderComponent={View}
-      ListHeaderComponentStyle={{ height: 155 }}
+      // ListHeaderComponent={View}
+      // ListHeaderComponentStyle={{ height: 155 }}
     />
     // </Drawer>
   );
@@ -107,7 +111,7 @@ const styles = StyleSheet.create({
   },
   eventsList: {
     backgroundColor: "#fff",
-    paddingTop: 155,
+    // paddingTop: 155,
   },
   sectionHeader: {
     paddingLeft: 10,

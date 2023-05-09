@@ -3,7 +3,7 @@ import { StyleSheet, Button, Alert, Pressable } from "react-native";
 import { useState, useEffect } from "react";
 import { useStateValue } from "../state/context";
 import { parseIcal } from "../lib/ical";
-import { MatrixRoom, MatrixRoomList } from "../types";
+import { MatrixRoom, MatrixRoomList } from "../../types";
 
 // matches #room:server.tld or !room:server.tld
 const MATRIX_FQID = /(\!|#)\w+:[\w.-]+\.\w+$/;
@@ -17,7 +17,7 @@ const URL_SCHEME = /^https?:\/\/[^\s/$.?#].[^\s]*$/;
 
 type UrlType = "none" | "matrix" | "ical";
 
-export default function CalendarsScreen() {
+export function EditFollowsScreen() {
   const [{ calendars }, dispatch] = useStateValue();
   const [url, setUrl] = useState("");
   const [isLoading, setLoading] = useState(false);
