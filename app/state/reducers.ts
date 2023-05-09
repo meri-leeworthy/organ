@@ -4,7 +4,7 @@ import {
   Action,
   AsyncStorageKey,
   AsyncStorageValue,
-} from "../types";
+} from "app/types";
 import { Reducer } from "react";
 
 export function replacer(key: unknown, value: unknown) {

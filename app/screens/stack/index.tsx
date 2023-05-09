@@ -75,7 +75,7 @@ export function RootNavigator() {
               </Pressable>
               <Pressable
                 onPress={() =>
-                  navigation.navigate("Account", {
+                  navigation.navigate("Login", {
                     isAuthenticated: client?.isLoggedIn() || false,
                   })
                 }
@@ -100,12 +100,9 @@ export function RootNavigator() {
       />
       <Stack.Group screenOptions={{ presentation: "modal" }}>
         <Stack.Screen
-          name="Account"
+          name="Login"
           component={LoginScreen}
-          options={({
-            navigation,
-            route,
-          }: RootStackScreenProps<"Account">) => ({
+          options={({ navigation, route }: RootStackScreenProps<"Login">) => ({
             title: route.params.isAuthenticated ? "My Calendars" : "Login",
           })}
         />

@@ -10,13 +10,13 @@ import RNPickerSelect from "react-native-picker-select";
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
-import { Text, TextInput, View } from "../../components/Themed";
+import { Text, TextInput, View } from "app/components/Themed";
 import { useState } from "react";
-import useMatrixClient from "../../hooks/useMatrixClient";
+import useMatrixClient from "app/hooks/useMatrixClient";
 import { useNavigation } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useStateValue } from "../../state/context";
-import { DismissKeyboard } from "../../components/DismissKeyboard";
+import { useStateValue } from "app/state/context";
+import { DismissKeyboard } from "app/components/DismissKeyboard";
 
 export default function CreateEventScreen() {
   const [{ calendars }] = useStateValue();
@@ -24,7 +24,7 @@ export default function CreateEventScreen() {
   const [eventName, setEventName] = useState("");
   const [venue, setVenue] = useState("");
   const [description, setDescription] = useState("");
-  const { client, setClient } = useMatrixClient();
+  const { client } = useMatrixClient();
   const navigation = useNavigation();
   const [date, setDate] = useState(new Date(Date.now()));
   const myHeaderHeight = useHeaderHeight();

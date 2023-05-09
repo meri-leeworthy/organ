@@ -28,8 +28,9 @@ declare global {
 
 export type RootStackParamList = {
   Drawer: undefined;
-  Account: { isAuthenticated: boolean };
+  Login: { isAuthenticated: boolean };
   CreateEvent: undefined;
+  EditFollows: undefined;
   NotFound: undefined;
   Event: { eventId: string; eventName: string };
 };
@@ -49,17 +50,6 @@ export type RootDrawerParamList = {
 
 export type RootDrawerScreenProps<Screen extends keyof RootDrawerParamList> =
   DrawerScreenProps<RootDrawerParamList, Screen>;
-
-// export type RootTabParamList = {
-//   Events: { drawerIsOpen: boolean };
-//   Settings: undefined;
-// };
-
-// export type RootTabScreenProps<Screen extends keyof RootTabParamList> =
-//   CompositeScreenProps<
-//     BottomTabScreenProps<RootTabParamList, Screen>,
-//     NativeStackScreenProps<RootStackParamList>
-//   >;
 
 // type MatrixRoomID = `!${string}:${string}`;
 type MatrixRoomID = string;

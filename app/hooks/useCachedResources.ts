@@ -12,7 +12,7 @@ import {
   getAsyncStorage,
   replacer,
   valuesOrEmptyArray,
-} from "../state/reducers";
+} from "app/state/reducers";
 
 export function useCachedResources() {
   const [isLoadingComplete, setLoadingComplete] = useState(false);
@@ -31,14 +31,14 @@ export function useCachedResources() {
         // Load fonts
         await Font.loadAsync({
           ...FontAwesome.font,
-          "space-mono": require("../assets/fonts/SpaceMono-Regular.ttf"),
-          "work-sans": require("../assets/fonts/worksans/WorkSans-Regular.ttf"),
-          "work-sans-bold": require("../assets/fonts/worksans/WorkSans-Bold.ttf"),
-          "work-sans-semibold": require("../assets/fonts/worksans/WorkSans-SemiBold.ttf"),
-          "work-sans-medium": require("../assets/fonts/worksans/WorkSans-Medium.ttf"),
-          "work-sans-light": require("../assets/fonts/worksans/WorkSans-Light.ttf"),
-          "work-sans-thin": require("../assets/fonts/worksans/WorkSans-Thin.ttf"),
-          "work-sans-italic": require("../assets/fonts/worksans/WorkSans-Italic.ttf"),
+          "space-mono": require("app/assets/fonts/SpaceMono-Regular.ttf"),
+          "work-sans": require("app/assets/fonts/worksans/WorkSans-Regular.ttf"),
+          "work-sans-bold": require("app/assets/fonts/worksans/WorkSans-Bold.ttf"),
+          "work-sans-semibold": require("app/assets/fonts/worksans/WorkSans-SemiBold.ttf"),
+          "work-sans-medium": require("app/assets/fonts/worksans/WorkSans-Medium.ttf"),
+          "work-sans-light": require("app/assets/fonts/worksans/WorkSans-Light.ttf"),
+          "work-sans-thin": require("app/assets/fonts/worksans/WorkSans-Thin.ttf"),
+          "work-sans-italic": require("app/assets/fonts/worksans/WorkSans-Italic.ttf"),
         });
 
         const parsedMatrixRooms = await getAsyncStorage("matrixRoomIds");

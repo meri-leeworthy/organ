@@ -9,8 +9,8 @@ import {
   TextInput as DefaultTextInput,
 } from "react-native";
 
-import Colors from "../constants/Colors";
-import { useColorScheme } from "../hooks/useColorScheme";
+import Colors from "app/constants/Colors";
+import { useColorScheme } from "app/hooks/useColorScheme";
 import { StyleSheet } from "react-native";
 
 export function useThemeColor(

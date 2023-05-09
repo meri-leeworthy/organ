@@ -1,21 +1,13 @@
-import { FlatList, Pressable, StyleSheet, Button } from "react-native";
-import { Text, View } from "../../components/Themed";
-import {
-  MatrixCalendarEvent,
-  RootDrawerScreenProps,
-  RootStackScreenProps,
-} from "../../types";
+import { Pressable, StyleSheet } from "react-native";
+import { Text } from "app/components/Themed";
+import { MatrixCalendarEvent, RootDrawerScreenProps } from "../../types";
 // import { IcalEvent, dateSort } from "../lib/ical";
-import ListEvent from "../../components/ListEvent";
-import { TreeType } from "icalts/dist/src/types";
-import { useStateValue } from "../../state/context";
-import useMatrixClient from "../../hooks/useMatrixClient";
-import { useEffect, useState } from "react";
-// import { useRetry } from "../lib/useRetry";
-import { Drawer } from "react-native-drawer-layout";
-import { EditFollowsScreen } from "app/screens/stack/EditFollowsScreen";
-import { FontAwesome } from "@expo/vector-icons";
-import { CellContainer, FlashList } from "@shopify/flash-list";
+import ListEvent from "app/components/ListEvent";
+// import { TreeType } from "icalts/dist/src/types";
+import { useStateValue } from "app/state/context";
+import useMatrixClient from "app/hooks/useMatrixClient";
+// import { useRetry } from "app/lib/useRetry";
+import { FlashList } from "@shopify/flash-list";
 
 // general goal: display a list of events that combines ical feeds and matrix rooms
 // matrix rooms represent the equivalent of calendars: event data may be stored

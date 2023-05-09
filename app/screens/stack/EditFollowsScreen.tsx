@@ -1,9 +1,8 @@
 import { Text, View, TextInput } from "app/components/Themed";
 import { StyleSheet, Button, Alert, Pressable } from "react-native";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useStateValue } from "app/state/context";
-import { parseIcal } from "app/lib/ical";
-import { MatrixRoom, MatrixRoomList } from "app/types";
+import { MatrixRoom } from "app/types";
 
 // matches #room:server.tld or !room:server.tld
 const MATRIX_FQID = /(\!|#)\w+:[\w.-]+\.\w+$/;

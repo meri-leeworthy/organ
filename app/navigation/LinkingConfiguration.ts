@@ -13,7 +13,9 @@ const linking: LinkingOptions<RootStackParamList> = {
   prefixes: [Linking.createURL("/")],
   config: {
     screens: {
-      Root: "root",
+      Drawer: "drawer",
+      CreateEvent: "create-event",
+      EditFollows: "edit-follows",
       Login: "login",
       Event: "event",
       NotFound: "*",
