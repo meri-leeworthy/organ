@@ -13,7 +13,7 @@ export function SettingsScreen({
         notifications.
       </Text>
       <TouchableOpacity
-        onPress={() => navigation.navigate("Following")}
+        onPress={() => navigation.navigate("Home")}
         style={styles.link}>
         <Text style={styles.linkText}>Go to home screen!</Text>
       </TouchableOpacity>
