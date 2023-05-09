@@ -10,13 +10,13 @@ import RNPickerSelect from "react-native-picker-select";
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
-import { Text, TextInput, View } from "../components/Themed";
+import { Text, TextInput, View } from "../../components/Themed";
 import { useState } from "react";
-import useMatrixClient from "../hooks/useMatrixClient";
+import useMatrixClient from "../../hooks/useMatrixClient";
 import { useNavigation } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useStateValue } from "../state/context";
-import { DismissKeyboard } from "../components/DismissKeyboard";
+import { useStateValue } from "../../state/context";
+import { DismissKeyboard } from "../../components/DismissKeyboard";
 
 export default function CreateEventScreen() {
   const [{ calendars }] = useStateValue();

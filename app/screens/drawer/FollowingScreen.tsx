@@ -4,7 +4,7 @@ import {
   MatrixCalendarEvent,
   RootDrawerScreenProps,
   RootStackScreenProps,
-} from "../../../types";
+} from "../../types";
 // import { IcalEvent, dateSort } from "../lib/ical";
 import ListEvent from "../../components/ListEvent";
 import { TreeType } from "icalts/dist/src/types";
@@ -13,7 +13,7 @@ import useMatrixClient from "../../hooks/useMatrixClient";
 import { useEffect, useState } from "react";
 // import { useRetry } from "../lib/useRetry";
 import { Drawer } from "react-native-drawer-layout";
-import { EditFollowsScreen } from "../EditFollowsScreen";
+import { EditFollowsScreen } from "app/screens/stack/EditFollowsScreen";
 import { FontAwesome } from "@expo/vector-icons";
 import { CellContainer, FlashList } from "@shopify/flash-list";
 

@@ -1,7 +1,7 @@
 import { StyleSheet } from "react-native";
 import { Text, View } from "../components/Themed";
 import dayjs from "dayjs";
-import { MatrixCalendarEvent } from "types";
+import { MatrixCalendarEvent } from "app/types";
 
 export default function ListEvent({
   calEvent,

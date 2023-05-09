@@ -1,19 +1,16 @@
 import { StyleSheet, TouchableOpacity } from "react-native";
 
-import { Text, View } from "../../components/Themed";
-import { RootDrawerParamList, RootDrawerScreenProps } from "../../types";
+import { Text, View } from "app/components/Themed";
+import { RootDrawerScreenProps, RootStackScreenProps } from "app/types";
 
-export function SettingsScreen({
+export default function NotFoundScreen({
   navigation,
-}: RootDrawerScreenProps<keyof RootDrawerParamList>) {
+}: RootStackScreenProps<"NotFound">) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>
-        This screen doesn't exist yet. This page is for app settings, like for
-        notifications.
-      </Text>
+      <Text style={styles.title}>This screen doesn't exist.</Text>
       <TouchableOpacity
-        onPress={() => navigation.navigate("Following")}
+        onPress={() => navigation.replace("Drawer")}
         style={styles.link}>
         <Text style={styles.linkText}>Go to home screen!</Text>
       </TouchableOpacity>

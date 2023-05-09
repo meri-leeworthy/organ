@@ -1,16 +1,21 @@
 import { StyleSheet, TouchableOpacity } from "react-native";
 
-import { Text, View } from "../components/Themed";
-import { RootDrawerScreenProps, RootStackScreenProps } from "../../types";
+import { Text, View } from "../../components/Themed";
+import { RootDrawerParamList, RootDrawerScreenProps } from "../../types";
 
-export default function NotFoundScreen({
+export function HomeScreen({
   navigation,
-}: RootStackScreenProps<"NotFound">) {
+}: RootDrawerScreenProps<keyof RootDrawerParamList>) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>This screen doesn't exist.</Text>
+      <Text style={styles.title}>
+        This screen doesn't exist yet. Home is a mix of other pages in the
+        drawer navigator such as 'following', 'calendar', 'explore', and
+        'hosting'. It lets the user scroll and see previews of each page and
+        click on them to go to the full page.
+      </Text>
       <TouchableOpacity
-        onPress={() => navigation.replace("Drawer")}
+        onPress={() => navigation.navigate("Following")}
         style={styles.link}>
         <Text style={styles.linkText}>Go to home screen!</Text>
       </TouchableOpacity>

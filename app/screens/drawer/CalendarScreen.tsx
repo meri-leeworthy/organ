@@ -1,14 +1,17 @@
 import { StyleSheet, TouchableOpacity } from "react-native";
 
 import { Text, View } from "../../components/Themed";
-import { RootDrawerParamList, RootDrawerScreenProps } from "../../../types";
+import { RootDrawerParamList, RootDrawerScreenProps } from "../../types";
 
 export function CalendarScreen({
   navigation,
 }: RootDrawerScreenProps<keyof RootDrawerParamList>) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>This screen doesn't exist yet.</Text>
+      <Text style={styles.title}>
+        This screen doesn't exist yet. Calendar is for events that I'm attending
+        or 'following' - it is a feed showing the user's personal calendar.
+      </Text>
       <TouchableOpacity
         onPress={() => navigation.navigate("Following")}
         style={styles.link}>

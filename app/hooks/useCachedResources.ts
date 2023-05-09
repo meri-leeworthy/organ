@@ -7,14 +7,14 @@ import {
   MatrixEventID,
   MatrixRoom,
   MatrixRoomList,
-} from "../types";
+} from "app/types";
 import {
   getAsyncStorage,
   replacer,
   valuesOrEmptyArray,
 } from "../state/reducers";
 
-export default function useCachedResources() {
+export function useCachedResources() {
   const [isLoadingComplete, setLoadingComplete] = useState(false);
   const [matrixRoomIds, setMatrixRoomIds] = useState<MatrixRoomList>(new Set());
   const [rooms, setRooms] = useState<Map<string, MatrixRoom>>(new Map()); //

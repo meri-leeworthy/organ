@@ -38,6 +38,7 @@ export type RootStackScreenProps<Screen extends keyof RootStackParamList> =
   NativeStackScreenProps<RootStackParamList, Screen>;
 
 export type RootDrawerParamList = {
+  Home: undefined;
   Calendar: undefined;
   Hosting: undefined;
   Following: undefined;

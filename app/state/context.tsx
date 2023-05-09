@@ -7,7 +7,7 @@ import React, {
   useReducer,
 } from "react";
 import * as SecureStore from "expo-secure-store";
-import { OrganGlobalState, Action } from "../../types";
+import { OrganGlobalState, Action } from "../types";
 import { setAsyncStorage } from "./reducers";
 
 export async function getClient() {

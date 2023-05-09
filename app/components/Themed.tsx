@@ -10,7 +10,7 @@ import {
 } from "react-native";
 
 import Colors from "../constants/Colors";
-import useColorScheme from "../hooks/useColorScheme";
+import { useColorScheme } from "../hooks/useColorScheme";
 import { StyleSheet } from "react-native";
 
 export function useThemeColor(

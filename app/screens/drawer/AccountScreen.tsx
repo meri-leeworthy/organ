@@ -1,14 +1,17 @@
 import { StyleSheet, TouchableOpacity } from "react-native";
 
 import { Text, View } from "../../components/Themed";
-import { RootDrawerParamList, RootDrawerScreenProps } from "../../../types";
+import { RootDrawerParamList, RootDrawerScreenProps } from "../../types";
 
 export function AccountScreen({
   navigation,
 }: RootDrawerScreenProps<keyof RootDrawerParamList>) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>This screen doesn't exist yet.</Text>
+      <Text style={styles.title}>
+        This screen doesn't exist yet. Account is for account settings such as
+        display name, profile picture and logging out.
+      </Text>
       <TouchableOpacity
         onPress={() => navigation.navigate("Following")}
         style={styles.link}>

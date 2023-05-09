@@ -1,14 +1,17 @@
 import { StyleSheet, TouchableOpacity } from "react-native";
 
 import { Text, View } from "../../components/Themed";
-import { RootDrawerParamList, RootDrawerScreenProps } from "../../../types";
+import { RootDrawerParamList, RootDrawerScreenProps } from "../../types";
 
 export function ExploreScreen({
   navigation,
 }: RootDrawerScreenProps<keyof RootDrawerParamList>) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>This screen doesn't exist yet.</Text>
+      <Text style={styles.title}>
+        This screen doesn't exist yet. Explore is for discovery of new events or
+        hosts. Discovery is the most complicated planned feature of this app.
+      </Text>
       <TouchableOpacity
         onPress={() => navigation.navigate("Following")}
         style={styles.link}>
