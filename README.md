@@ -31,9 +31,10 @@ An alternative under consideration is that each event is itself a Matrix room.
 This would allow for more fine-grained control over access to events, and would
 allow for events to be shared between calendars. This could also allow a more
 Facebook-style posts and replies model, as each post could be the start of a
-thread. The main challenge lies in distributing metadata about events between
-calendars in a way that minimises inconsistency and allows that metadata to be
-encrypted (i.e. not part of the room state).
+thread. The challenge to this approach right now lies in distributing metadata
+about events between calendars in a way that allows that metadata to be
+encrypted (i.e. not part of the room state) while avoiding inconsistencies
+between calendars.
 
 ## Features
 
