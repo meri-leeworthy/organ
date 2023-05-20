@@ -105,7 +105,7 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
           events: action.events,
           roomName: action.roomName,
           roomId: action.roomId,
-          isCalendar: true,
+          roomType: action.roomType,
         }),
       };
 

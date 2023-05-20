@@ -7,11 +7,17 @@ import {
   Text as DefaultText,
   View as DefaultView,
   TextInput as DefaultTextInput,
+  Pressable,
+  GestureResponderEvent,
+  StyleProp,
+  ViewStyle,
+  TextStyle,
 } from "react-native";
 
 import Colors from "app/constants/Colors";
 import { useColorScheme } from "app/hooks/useColorScheme";
 import { StyleSheet } from "react-native";
+import { TouchableOpacity } from "react-native-gesture-handler";
 
 export function useThemeColor(
   props: { light?: string; dark?: string },
@@ -70,13 +76,102 @@ export function TextInput(props: TextInputProps) {
   );
 }
 
+export function HorizontalRule() {
+  return <View style={styles.hr} />;
+}
+
+export function Button({
+  onPress,
+  text,
+  variant,
+  style,
+  textStyle,
+}: {
+  onPress: ((event: GestureResponderEvent) => void) | null | undefined;
+  text: string;
+  variant?: "primary" | "secondary";
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.button,
+        variant === "secondary" ? styles.buttonSecondary : null,
+        style,
+      ]}>
+      <Text
+        style={[
+          styles.buttonText,
+          variant === "secondary" ? styles.buttonTextSecondary : null,
+          textStyle,
+        ]}>
+        {text}
+      </Text>
+    </Pressable>
+  );
+}
+
+export function LinkButton({
+  onPress,
+  text,
+  style,
+  textStyle,
+}: {
+  onPress:
+    | (((event: GestureResponderEvent) => void) & (() => void))
+    | undefined;
+  text: string;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
+}) {
+  return (
+    <TouchableOpacity onPress={onPress} style={[styles.link, style]}>
+      <Text style={[styles.linkText, textStyle]}>{text}</Text>
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
   input: {
     height: 40,
-    borderColor: "orange",
-    padding: 8,
+    fontFamily: "work-sans",
+    fontSize: 20,
+  },
+  hr: {
+    borderBottomColor: "#ccc",
+    borderBottomWidth: 1,
+    marginVertical: 30,
+    height: 1,
+    width: "100%",
+  },
+  button: {
+    backgroundColor: "#8D9EFF",
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: 4,
-    marginTop: 12,
+    height: 48,
+  },
+  buttonText: {
+    fontSize: 20,
+    color: "white",
+    fontFamily: "work-sans",
+  },
+  buttonSecondary: {
+    backgroundColor: "transparent",
     borderWidth: 1,
+    borderColor: "#8D9EFF",
+  },
+  buttonTextSecondary: {
+    color: "#8D9EFF",
+  },
+  link: {
+    paddingVertical: 15,
+  },
+  linkText: {
+    fontSize: 14,
+    color: "#2e78b7",
   },
 });

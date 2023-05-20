@@ -44,10 +44,6 @@ export function FollowingScreen({
     a.date.getTime() > b.date.getTime() ? 1 : -1
   );
 
-  // a function that inserts a section header into the list of events
-  // when the date of the next event is different from the date of the
-  // previous event
-
   const insertSectionHeaders = (events: MatrixCalendarEvent[]) => {
     const sortedEvents = [...events].sort((a, b) =>
       a.date.getTime() > b.date.getTime() ? 1 : -1
@@ -64,16 +60,6 @@ export function FollowingScreen({
   };
 
   return (
-    // <Drawer
-    //   open={drawerIsOpen}
-    //   onOpen={() => {
-    //     // navigation.setParams({ drawerIsOpen: true });
-    //   }}
-    //   onClose={() => {
-    //     // navigation.setParams({ drawerIsOpen: false });
-    //   }}
-    //   drawerType="front"
-    //   renderDrawerContent={() => <CalendarsScreen />}>
     <FlashList
       data={insertSectionHeaders(data)}
       renderItem={({ item }) => {
@@ -85,12 +71,8 @@ export function FollowingScreen({
         return typeof item === "string" ? "sectionHeader" : "row";
       }}
       keyExtractor={item => (typeof item === "string" ? item : item.eventId)}
-      // style={styles.eventsList}
       estimatedItemSize={100}
-      // ListHeaderComponent={View}
-      // ListHeaderComponentStyle={{ height: 155 }}
     />
-    // </Drawer>
   );
 
   // TODO: Split sorted list into Past and Future Events
@@ -100,10 +82,6 @@ const styles = StyleSheet.create({
   container: {
     // flex: 1,
     // overflow: "scroll",
-  },
-  eventsList: {
-    backgroundColor: "#fff",
-    // paddingTop: 155,
   },
   sectionHeader: {
     paddingLeft: 10,

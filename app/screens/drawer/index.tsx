@@ -13,6 +13,8 @@ import { FollowingScreen } from "app/screens/drawer/FollowingScreen";
 import { ExploreScreen } from "./ExploreScreen";
 import { AccountScreen } from "./AccountScreen";
 import { SettingsScreen } from "./SettingsScreen";
+import { Text, View } from "app/components/Themed";
+import { StyleSheet } from "react-native";
 
 const Drawer = createDrawerNavigator<RootDrawerParamList>();
 
@@ -34,10 +36,27 @@ export function RootDrawer() {
       <Drawer.Screen name="Home" component={HomeScreen} />
       <Drawer.Screen name="Calendar" component={CalendarScreen} />
       <Drawer.Screen name="Hosting" component={HostingScreen} />
-      <Drawer.Screen name="Following" component={FollowingScreen} />
+      <Drawer.Screen
+        name="Following"
+        component={FollowingScreen}
+        options={{
+          headerRight: () => (
+            <View style={styles.headerButtonContainer}>
+              <Text>Hi</Text>
+              <DrawerToggleButton />
+            </View>
+          ),
+        }}
+      />
       <Drawer.Screen name="Explore" component={ExploreScreen} />
       <Drawer.Screen name="Account" component={AccountScreen} />
       <Drawer.Screen name="Settings" component={SettingsScreen} />
     </Drawer.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  headerButtonContainer: {
+    flexDirection: "row",
+  },
+});

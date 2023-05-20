@@ -1,5 +1,5 @@
-import { StyleSheet, TouchableOpacity } from "react-native";
-import { Text, View } from "app/components/Themed";
+import { StyleSheet } from "react-native";
+import { LinkButton, Text, View } from "app/components/Themed";
 import { RootDrawerParamList, RootDrawerScreenProps } from "app/types";
 
 export function HostingScreen({
@@ -12,11 +12,14 @@ export function HostingScreen({
         'hosting' or 'co-hosting'. Ultimately it should be possible for a single
         user to act as multiple hosts which are like groups.
       </Text>
-      <TouchableOpacity
+      <LinkButton
         onPress={() => navigation.navigate("Home")}
-        style={styles.link}>
-        <Text style={styles.linkText}>Go to home screen!</Text>
-      </TouchableOpacity>
+        text="Go to home screen!"
+      />
+      <LinkButton
+        onPress={() => navigation.getParent()?.navigate("ChooseHost")}
+        text="Create New Event"
+      />
     </View>
   );
 }
@@ -31,13 +34,5 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "bold",
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-  linkText: {
-    fontSize: 14,
-    color: "#2e78b7",
   },
 });

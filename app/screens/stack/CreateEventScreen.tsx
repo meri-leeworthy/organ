@@ -1,26 +1,35 @@
 import { StatusBar } from "expo-status-bar";
 import {
-  Button,
   Platform,
   StyleSheet,
   KeyboardAvoidingView,
   ScrollView,
+  TextInput,
+  Pressable,
 } from "react-native";
 import RNPickerSelect from "react-native-picker-select";
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
-import { Text, TextInput, View } from "app/components/Themed";
+import {
+  Button,
+  HorizontalRule,
+  Text,
+  TextInput as ThemedTextInput,
+  View,
+} from "app/components/Themed";
 import { useState } from "react";
 import useMatrixClient from "app/hooks/useMatrixClient";
 import { useNavigation } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useStateValue } from "app/state/context";
 import { DismissKeyboard } from "app/components/DismissKeyboard";
+import { FontAwesome as FA } from "@expo/vector-icons";
+// import { Preset, Visibility } from "matrix-js-sdk";
 
 export default function CreateEventScreen() {
   const [{ calendars }] = useStateValue();
-  const [selectedCalendar, setSelectedCalendar] = useState("");
+  // const [selectedCalendar, setSelectedCalendar] = useState("");
   const [eventName, setEventName] = useState("");
   const [venue, setVenue] = useState("");
   const [description, setDescription] = useState("");
@@ -29,9 +38,9 @@ export default function CreateEventScreen() {
   const [date, setDate] = useState(new Date(Date.now()));
   const myHeaderHeight = useHeaderHeight();
 
-  const matrixCalendars = calendars.values();
+  // const matrixCalendars = calendars.values();
   const onChange = (
-    event: DateTimePickerEvent,
+    _event: DateTimePickerEvent,
     selectedDate: Date | undefined
   ) => {
     if (selectedDate === undefined) return;
@@ -48,16 +57,20 @@ export default function CreateEventScreen() {
       description,
       date,
     };
-    await client.sendEvent(
-      selectedCalendar,
-      "directory.radical.event.v1",
-      newEvent,
-      "",
-      (err, res) => {
-        console.log(err);
-      }
-    );
-    navigation.goBack();
+
+    console.log(newEvent);
+
+    //this should perhaps come at a later step in the flow
+    // await client.sendEvent(
+    //   selectedCalendar,
+    //   "directory.radical.event.v1",
+    //   newEvent,
+    //   "",
+    //   (err, res) => {
+    //     console.log(err);
+    //   }
+    // );
+    // navigation.goBack();
   };
 
   return (
@@ -67,7 +80,7 @@ export default function CreateEventScreen() {
         keyboardVerticalOffset={myHeaderHeight + 47}
         style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container}>
-          <Text style={styles.label}>Choose Calendar</Text>
+          {/* <Text style={styles.label}>Choose Calendar</Text>
           <RNPickerSelect
             value={selectedCalendar}
             onValueChange={itemValue => setSelectedCalendar(itemValue)}
@@ -75,33 +88,43 @@ export default function CreateEventScreen() {
               return { label: c.roomName, value: c.roomId };
             })}
             style={{ viewContainer: styles.select }}
-          />
-          <Text style={styles.label}>Event Name</Text>
-          <TextInput
+          /> */}
+          {/* <Text style={styles.label}>Event Name</Text> */}
+          <ThemedTextInput
             onChangeText={setEventName}
             value={eventName}
-            placeholder="Name of your event"
+            placeholder="Your event's name..."
+            style={styles.titleInput}
           />
-          <Text style={styles.label}>Date</Text>
+          {/* <Text style={styles.label}>Date</Text> */}
           <DateTimePickerSet onChange={onChange} date={date} />
-          <Text style={styles.label}>Venue</Text>
-          <TextInput
-            onChangeText={setVenue}
-            value={venue}
-            placeholder="Set the location here"
-          />
-          <Text style={styles.label}>Description</Text>
+          <View style={styles.datetimecontainer}>
+            <FontAwesome name="location-arrow" />
+            {/* <Text style={styles.label}>Venue</Text> */}
+            <ThemedTextInput
+              onChangeText={setVenue}
+              value={venue}
+              placeholder="Meeting place..."
+              style={{ marginLeft: 20 }}
+            />
+          </View>
 
-          <TextInput
-            onChangeText={setDescription}
-            value={description}
-            multiline
-            numberOfLines={4}
-            style={{ height: 100 }}
-            placeholder="Description of your event"
-          />
+          {/* <Text style={styles.label}>Description</Text> */}
 
-          <Button title="Create" onPress={handleCreateEvent} />
+          <View style={styles.datetimecontainer}>
+            <FontAwesome name="pencil" />
+            <ThemedTextInput
+              onChangeText={setDescription}
+              value={description}
+              multiline
+              numberOfLines={4}
+              style={{ height: 100, marginLeft: 16 }}
+              placeholder="Description of your event"
+            />
+          </View>
+          {/* <View style={{ flex: 1 }} /> */}
+
+          <Button onPress={handleCreateEvent} text="continue" />
 
           {/* Use a light status bar on iOS to account for the black space above the modal */}
           <StatusBar style={Platform.OS === "ios" ? "light" : "auto"} />
@@ -124,6 +147,7 @@ const DateTimePickerSet = ({
 }) => {
   return (
     <View style={styles.datetimecontainer}>
+      <FontAwesome name="calendar" />
       <DateTimePicker
         testID="dateTimePicker"
         value={date}
@@ -144,6 +168,10 @@ const DateTimePickerSet = ({
   );
 };
 
+const FontAwesome = ({ name }: { name: keyof typeof FA.glyphMap }) => (
+  <FA name={name} size={24} color="#999" style={styles.fa} />
+);
+
 const styles = StyleSheet.create({
   select: {
     height: 40,
@@ -156,13 +184,19 @@ const styles = StyleSheet.create({
   datetimecontainer: {
     display: "flex",
     flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 12,
+    justifyContent: "flex-start",
+    // alignItems: "",
+    marginTop: 32,
     backgroundColor: "transparent",
   },
   datetimepicker: {
-    marginHorizontal: 8,
+    marginLeft: 16,
     borderRadius: 4,
+  },
+  titleInput: {
+    fontSize: 30,
+    marginTop: 12,
+    marginHorizontal: 6,
   },
   container: {
     flex: 1,
@@ -177,10 +211,20 @@ const styles = StyleSheet.create({
   },
   label: {
     marginTop: 12,
+    fontFamily: "work-sans",
   },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: "80%",
+  fa: { marginTop: 6 },
+  button: {
+    backgroundColor: "#8D9EFF",
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 4,
+    height: 48,
+  },
+  buttonText: {
+    fontSize: 20,
+    color: "white",
+    fontFamily: "work-sans",
   },
 });

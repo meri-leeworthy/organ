@@ -82,7 +82,7 @@ export function EditFollowsScreen() {
           roomId,
           roomName: room.roomName,
           events: new Set(),
-          isCalendar: true,
+          roomType: "calendar",
         });
         setLoading(false);
         return;
@@ -115,7 +115,7 @@ export function EditFollowsScreen() {
               roomId: room.roomId,
               roomName: room.roomName,
               events: new Set(),
-              isCalendar: true,
+              roomType: "calendar",
             });
           },
         },
@@ -134,7 +134,7 @@ export function EditFollowsScreen() {
       {error && <Text style={{ color: "red" }}>{error}</Text>}
       <Text style={styles.heading}>My Calendars</Text>
       {[...calendars.values()]
-        .filter(c => c.isCalendar)
+        .filter(c => c.roomType === "calendar")
         .map(calendar => (
           <View key={calendar.roomId} style={styles.calendar}>
             <Text>{calendar.roomName}</Text>
@@ -142,7 +142,7 @@ export function EditFollowsScreen() {
         ))}
       <Text style={styles.heading}>My Matrix Rooms</Text>
       {[...calendars.values()]
-        .filter(c => !c.isCalendar)
+        .filter(c => !(c.roomType === "calendar"))
         .map((room, i) => (
           <Pressable key={i} onPress={() => addRoomToCalendarsAlert(room)}>
             <View style={styles.calendar}>

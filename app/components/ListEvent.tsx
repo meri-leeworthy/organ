@@ -29,9 +29,9 @@ const styles = StyleSheet.create({
     // borderStyle: "solid",
     // borderColor: "#aaaaaa",
     // borderWidth: 1,
-    margin: 0,
-    borderRadius: 0,
-    backgroundColor: "transparent",
+    margin: 10,
+    borderRadius: 10,
+    backgroundColor: "white",
   },
   eventName: {
     fontSize: 20,

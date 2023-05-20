@@ -29,10 +29,11 @@ declare global {
 export type RootStackParamList = {
   Drawer: undefined;
   Login: { isAuthenticated: boolean };
-  CreateEvent: undefined;
+  CreateEvent: { calendar: MatrixRoomID };
   EditFollows: undefined;
   NotFound: undefined;
   Event: { eventId: string; eventName: string };
+  ChooseHost: undefined;
 };
 
 export type RootStackScreenProps<Screen extends keyof RootStackParamList> =
@@ -64,6 +65,7 @@ type DirectoryRadicalEventV1 = {
   venue: string;
   eventId: MatrixEventID;
   calendarId: CalendarID;
+  roomId: MatrixRoomID | undefined;
 };
 
 export type MatrixCalendarEvent = DirectoryRadicalEventV1;
@@ -72,7 +74,7 @@ export type MatrixRoom = {
   events: Set<MatrixEventID> | {};
   roomName: string;
   roomId: MatrixRoomID;
-  isCalendar: boolean;
+  roomType: "calendar" | "event" | undefined;
 };
 
 export type MatrixRoomList = Set<MatrixRoomID>;

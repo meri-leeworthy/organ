@@ -11,6 +11,7 @@ import NotFoundScreen from "./NotFoundScreen";
 import LoginScreen from "./LoginScreen";
 import CreateEventScreen from "./CreateEventScreen";
 import EventScreen from "./EventScreen";
+import ChooseHostScreen from "./ChooseHostScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -43,60 +44,65 @@ export function RootNavigator() {
           //     />
           //   </Pressable>
           // ),
-          headerLargeTitle: true,
-          headerLargeTitleStyle: {
-            color: Colors[colorScheme].text,
-            fontFamily: "work-sans-semibold",
-          },
-          headerTitleStyle: {
-            color: Colors[colorScheme].text,
-            fontFamily: "work-sans-semibold",
-          },
-          headerTitleAlign: "left",
-          headerRight: () => (
-            <View
-              style={{
-                // flexGrow: 1,
-                // borderWidth: 1,
-                // flexWrap: "nowrap",
-                width: 60,
-                // height: "100%",
-                // alignItems: "flex-end",
-                // justifyContent: "center",
-                flexDirection: "row",
-              }}>
-              <Pressable
-                onPress={() => navigation.navigate("CreateEvent")}
-                style={({ pressed }) => ({
-                  opacity: pressed ? 0.5 : 1,
-                  marginRight: 15,
-                })}>
-                <FontAwesome size={25} name="plus" />
-              </Pressable>
-              <Pressable
-                onPress={() =>
-                  navigation.navigate("Login", {
-                    isAuthenticated: client?.isLoggedIn() || false,
-                  })
-                }
-                style={({ pressed }) => ({
-                  opacity: pressed ? 0.5 : 1,
-                })}>
-                <FontAwesome
-                  name="user-circle"
-                  size={25}
-                  color={Colors[colorScheme].text}
-                  style={{}}
-                />
-              </Pressable>
-            </View>
-          ),
+          // headerLargeTitle: true,
+          // headerLargeTitleStyle: {
+          //   color: Colors[colorScheme].text,
+          //   fontFamily: "work-sans-semibold",
+          // },
+          // headerTitleStyle: {
+          //   color: Colors[colorScheme].text,
+          //   fontFamily: "work-sans-semibold",
+          // },
+          // headerTitleAlign: "left",
+          // headerRight: () => (
+          //   <View
+          //     style={{
+          //       // flexGrow: 1,
+          //       // borderWidth: 1,
+          //       // flexWrap: "nowrap",
+          //       width: 60,
+          //       // height: "100%",
+          //       // alignItems: "flex-end",
+          //       // justifyContent: "center",
+          //       flexDirection: "row",
+          //     }}>
+          //     <Pressable
+          //       onPress={() => navigation.navigate("CreateEvent")}
+          //       style={({ pressed }) => ({
+          //         opacity: pressed ? 0.5 : 1,
+          //         marginRight: 15,
+          //       })}>
+          //       <FontAwesome size={25} name="plus" />
+          //     </Pressable>
+          //     <Pressable
+          //       onPress={() =>
+          //         navigation.navigate("Login", {
+          //           isAuthenticated: client?.isLoggedIn() || false,
+          //         })
+          //       }
+          //       style={({ pressed }) => ({
+          //         opacity: pressed ? 0.5 : 1,
+          //       })}>
+          //       <FontAwesome
+          //         name="user-circle"
+          //         size={25}
+          //         color={Colors[colorScheme].text}
+          //         style={{}}
+          //       />
+          //     </Pressable>
+          //   </View>
+          // ),
         })}
       />
       <Stack.Screen
         name="NotFound"
         component={NotFoundScreen}
         options={{ title: "Oops!" }}
+      />
+      <Stack.Screen
+        name="Event"
+        component={EventScreen}
+        options={({ route }) => ({ title: route.params.eventName })}
       />
       <Stack.Group screenOptions={{ presentation: "modal" }}>
         <Stack.Screen
@@ -107,16 +113,24 @@ export function RootNavigator() {
           })}
         />
         <Stack.Screen
+          name="ChooseHost"
+          component={ChooseHostScreen}
+          options={{
+            headerTitle: "Share event to...",
+            headerTitleAlign: "left",
+            headerLargeTitle: true,
+          }}
+        />
+        <Stack.Screen
           name="CreateEvent"
           component={CreateEventScreen}
-          options={{ headerTitle: "Create New Event" }}
+          options={{
+            headerTitle: "New Event",
+            headerTitleAlign: "left",
+            headerLargeTitle: true,
+          }}
         />
       </Stack.Group>
-      <Stack.Screen
-        name="Event"
-        component={EventScreen}
-        options={({ route }) => ({ title: route.params.eventName })}
-      />
     </Stack.Navigator>
   );
 }
