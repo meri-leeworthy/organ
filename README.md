@@ -18,7 +18,22 @@ To run Organ locally, run `npx expo start`.
 
 ### Matrix
 
-Organ uses the [matrix-js-sdk](https://github.com/matrix-org/matrix-js-sdk/)
+Organ uses the [matrix-js-sdk](https://github.com/matrix-org/matrix-js-sdk/) to
+communicate with Matrix homeservers. The data model is likely to change and is
+currently as follows: Matrix rooms are used to represent host calendars, with
+caledar events stored as Matrix events in the room timeline. Each event is a
+custom Matrix message event, `directory.radical.event.vX.X`, and contains the
+event name, start and end times, venue, and other metadata. Each of these can
+then become a thread in the room, in which users can post comments and ask
+questions.
+
+An alternative under consideration is that each event is itself a Matrix room.
+This would allow for more fine-grained control over access to events, and would
+allow for events to be shared between calendars. This could also allow a more
+Facebook-style posts and replies model, as each post could be the start of a
+thread. The main challenge lies in distributing metadata about events between
+calendars in a way that minimises inconsistency and allows that metadata to be
+encrypted (i.e. not part of the room state).
 
 ## Features
 

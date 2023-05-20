@@ -63,7 +63,7 @@ export default function CreateEventScreen() {
     //this should perhaps come at a later step in the flow
     // await client.sendEvent(
     //   selectedCalendar,
-    //   "directory.radical.event.v1",
+    //   "directory.radical.event.v0.1",
     //   newEvent,
     //   "",
     //   (err, res) => {
