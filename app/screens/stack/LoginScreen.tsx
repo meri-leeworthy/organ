@@ -13,6 +13,9 @@ export default function LoginScreen() {
   const { client, setClient } = useMatrixClient();
   const navigation = useNavigation();
 
+  //TODO: can change homeserver
+  //TODO: OIDC login
+
   if (!client) return <Text>loading...</Text>;
 
   const handleLogin = async () => {
@@ -23,15 +26,11 @@ export default function LoginScreen() {
       const response = await client.login("m.login.password", {
         user: username,
         password: password,
-        // refresh_token: true,
       });
       console.log(response);
 
       await SecureStore.setItemAsync("accessToken", response.access_token);
       console.log("access token saved");
-
-      // await SecureStore.setItemAsync("refreshToken", response.refresh_token);
-      // console.log("refresh token saved");
 
       setClient(client);
       navigation.goBack();

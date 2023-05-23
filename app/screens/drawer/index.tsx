@@ -33,7 +33,11 @@ export function RootDrawer() {
         },
         headerRight: DrawerToggleButton,
       }}>
-      <Drawer.Screen name="Home" component={HomeScreen} />
+      <Drawer.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ title: "Organ" }}
+      />
       <Drawer.Screen name="Calendar" component={CalendarScreen} />
       <Drawer.Screen name="Hosting" component={HostingScreen} />
       <Drawer.Screen

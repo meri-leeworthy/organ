@@ -51,7 +51,7 @@ between calendars.
 
 - ✅ List Matrix rooms
 - ✅ Add Matrix room to list of calendars
-- ❌ Create new Matrix room
+- ❌ Create new host (Matrix room)
 - ❌ Remove Matrix room from list of calendars
 - ❌ Leave Matrix room
 

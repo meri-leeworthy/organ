@@ -10,7 +10,6 @@ import {
   NavigatorScreenParams,
 } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { TreeType } from "icalts/dist/src/types";
 import { MatrixClient } from "matrix-js-sdk";
 
 declare global {
@@ -34,6 +33,8 @@ export type RootStackParamList = {
   NotFound: undefined;
   Event: { eventId: string; eventName: string };
   ChooseHost: undefined;
+  SignUp: undefined;
+  PasswordReset: undefined;
 };
 
 export type RootStackScreenProps<Screen extends keyof RootStackParamList> =
