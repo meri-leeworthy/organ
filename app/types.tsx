@@ -59,7 +59,7 @@ type CalendarID = MatrixRoomID;
 // type MatrixEventID = `$${string}`;
 export type MatrixEventID = string;
 
-type DirectoryRadicalEventV1 = {
+type DirectoryRadicalEventUnstable = {
   date: Date;
   name: string;
   description: string;
@@ -69,14 +69,30 @@ type DirectoryRadicalEventV1 = {
   roomId: MatrixRoomID | undefined;
 };
 
-export type MatrixCalendarEvent = DirectoryRadicalEventV1;
+export type MatrixCalendarEvent = DirectoryRadicalEventUnstable;
 
-export type MatrixRoom = {
-  events: Set<MatrixEventID> | {};
+export type MatrixStandardRoom = {
   roomName: string;
   roomId: MatrixRoomID;
-  roomType: "calendar" | "event" | undefined;
+  roomType: undefined; //should be stored in the room state
 };
+
+export type MatrixCalendarRoom = {
+  roomName: string;
+  roomId: MatrixRoomID;
+  roomType: "calendar";
+  events: Set<MatrixEventID> | {};
+};
+
+export type MatrixEventRoom = {
+  roomName: string;
+  roomId: MatrixRoomID;
+  roomType: "event";
+  rootEventId: MatrixEventID; // event in the room (not room state: can be encrypted)
+  sharedEventIds: Map<CalendarID, MatrixEventID>; // note that this means if and where the event is shared is stored in the room state
+};
+
+type MatrixRoom = MatrixStandardRoom | MatrixCalendarRoom | MatrixEventRoom;
 
 export type MatrixRoomList = Set<MatrixRoomID>;
 
@@ -99,7 +115,7 @@ type DataAction<TData extends {}, TName extends string> = TData & {
   type: TName;
 };
 
-export type Action =
+export type Action<T> =
   | DataAction<{ client: MatrixClient }, "SET_CLIENT">
   | DataAction<{ matrixRooms: MatrixRoomList }, "SET_MATRIX_ROOMS">
   // | DataAction<ICalendar, "ADD_ICALENDAR">

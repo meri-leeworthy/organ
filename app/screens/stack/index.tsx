@@ -9,6 +9,7 @@ import ChooseHostScreen from "./ChooseHostScreen";
 import useMatrixClient from "app/hooks/useMatrixClient";
 import { SignUpScreen } from "./SignUpScreen";
 import { PasswordResetScreen } from "./PasswordResetScreen";
+import { EditFollowsScreen } from "./EditFollowsScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -54,6 +55,13 @@ export function RootNavigator() {
                 headerTitle: "New Event",
                 headerTitleAlign: "left",
                 headerLargeTitle: true,
+              }}
+            />
+            <Stack.Screen
+              name="EditFollows"
+              component={EditFollowsScreen}
+              options={{
+                headerTitle: "Edit Follows",
               }}
             />
           </Stack.Group>

@@ -25,6 +25,7 @@ import { useHeaderHeight } from "@react-navigation/elements";
 import { useStateValue } from "app/state/context";
 import { DismissKeyboard } from "app/components/DismissKeyboard";
 import { FontAwesome as FA } from "@expo/vector-icons";
+import { Preset, Visibility } from "matrix-js-sdk";
 // import { Preset, Visibility } from "matrix-js-sdk";
 
 export default function CreateEventScreen() {
@@ -60,10 +61,17 @@ export default function CreateEventScreen() {
 
     console.log(newEvent);
 
+    const newEventRoomID = await client.createRoom({
+      visibility: Visibility.Public,
+      preset: Preset.PublicChat,
+      name: eventName,
+      topic: description,
+    });
+
     //this should perhaps come at a later step in the flow
     // await client.sendEvent(
     //   selectedCalendar,
-    //   "directory.radical.event.v0.1",
+    //   "directory.radical.event.unstable",
     //   newEvent,
     //   "",
     //   (err, res) => {
@@ -203,6 +211,7 @@ const styles = StyleSheet.create({
     height: "100%",
     justifyContent: "flex-end",
     padding: 12,
+    paddingTop: 124,
     backgroundColor: "white",
   },
   title: {

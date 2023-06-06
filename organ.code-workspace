@@ -8,6 +8,9 @@
     },
     {
       "path": "../../matrix-client-cli"
+    },
+    {
+      "path": "../../radical.directory"
     }
   ],
   "settings": {}

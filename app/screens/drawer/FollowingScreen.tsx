@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet } from "react-native";
-import { Text } from "app/components/Themed";
+import { Text, View } from "app/components/Themed";
 import { MatrixCalendarEvent, RootDrawerScreenProps } from "../../types";
 // import { IcalEvent, dateSort } from "../lib/ical";
 import ListEvent from "app/components/ListEvent";
@@ -8,6 +8,8 @@ import { useStateValue } from "app/state/context";
 import useMatrixClient from "app/hooks/useMatrixClient";
 // import { useRetry } from "app/lib/useRetry";
 import { FlashList } from "@shopify/flash-list";
+import { useEffect } from "react";
+import { DrawerToggleButton } from "@react-navigation/drawer";
 
 // general goal: display a list of events that combines ical feeds and matrix rooms
 // matrix rooms represent the equivalent of calendars: event data may be stored
@@ -22,13 +24,33 @@ export function FollowingScreen({
   route,
   navigation,
 }: RootDrawerScreenProps<"Following">) {
-  const [{ events }] = useStateValue();
+  const [{ events, calendars }] = useStateValue();
   // const { drawerIsOpen } = route.params;
   useMatrixClient();
 
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={styles.headerButtonContainer}>
+          <Pressable
+            onPress={() => navigation.getParent()?.navigate("EditFollows")}>
+            <Text>Hi</Text>
+          </Pressable>
+          <DrawerToggleButton />
+        </View>
+      ),
+    });
+  }, [navigation]);
+
   console.log(events);
 
-  const Item = ({ calEvent }: { calEvent: MatrixCalendarEvent }) => (
+  const Item = ({
+    calEvent,
+    calendarName,
+  }: {
+    calEvent: MatrixCalendarEvent;
+    calendarName: string | undefined;
+  }) => (
     <Pressable
       onPress={() =>
         navigation.getParent()?.navigate("Event", {
@@ -36,7 +58,7 @@ export function FollowingScreen({
           eventName: calEvent.name,
         })
       }>
-      <ListEvent calEvent={calEvent} />
+      <ListEvent calEvent={calEvent} calendarName={calendarName} />
     </Pressable>
   );
 
@@ -44,28 +66,19 @@ export function FollowingScreen({
     a.date.getTime() > b.date.getTime() ? 1 : -1
   );
 
-  const insertSectionHeaders = (events: MatrixCalendarEvent[]) => {
-    const sortedEvents = [...events].sort((a, b) =>
-      a.date.getTime() > b.date.getTime() ? 1 : -1
-    );
-    const result = sortedEvents.reduce((acc, event) => {
-      const date = event.date.toDateString();
-      if (acc.length === 0 || acc[acc.length - 1] !== date) {
-        acc.push(date);
-      }
-      acc.push(event);
-      return acc;
-    }, [] as (string | MatrixCalendarEvent)[]);
-    return result;
-  };
-
   return (
     <FlashList
       data={insertSectionHeaders(data)}
       renderItem={({ item }) => {
         if (typeof item === "string")
           return <Text style={styles.sectionHeader}>{item}</Text>;
-        else return <Item calEvent={item} />;
+        else
+          return (
+            <Item
+              calEvent={item}
+              calendarName={calendars.get(item.calendarId)?.roomName}
+            />
+          );
       }}
       getItemType={item => {
         return typeof item === "string" ? "sectionHeader" : "row";
@@ -79,10 +92,6 @@ export function FollowingScreen({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    // flex: 1,
-    // overflow: "scroll",
-  },
   sectionHeader: {
     paddingLeft: 10,
     paddingTop: 16,
@@ -90,4 +99,22 @@ const styles = StyleSheet.create({
     color: "#333333",
     fontFamily: "work-sans-semibold",
   },
+  headerButtonContainer: {
+    flexDirection: "row",
+  },
 });
+
+const insertSectionHeaders = (events: MatrixCalendarEvent[]) => {
+  const sortedEvents = [...events].sort((a, b) =>
+    a.date.getTime() > b.date.getTime() ? 1 : -1
+  );
+  const result = sortedEvents.reduce((acc, event) => {
+    const date = event.date.toDateString();
+    if (acc.length === 0 || acc[acc.length - 1] !== date) {
+      acc.push(date);
+    }
+    acc.push(event);
+    return acc;
+  }, [] as (string | MatrixCalendarEvent)[]);
+  return result;
+};

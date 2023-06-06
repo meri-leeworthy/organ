@@ -14,7 +14,7 @@ import { ExploreScreen } from "./ExploreScreen";
 import { AccountScreen } from "./AccountScreen";
 import { SettingsScreen } from "./SettingsScreen";
 import { Text, View } from "app/components/Themed";
-import { StyleSheet } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 
 const Drawer = createDrawerNavigator<RootDrawerParamList>();
 
@@ -46,7 +46,9 @@ export function RootDrawer() {
         options={{
           headerRight: () => (
             <View style={styles.headerButtonContainer}>
-              <Text>Hi</Text>
+              <Pressable>
+                <Text>Hi</Text>
+              </Pressable>
               <DrawerToggleButton />
             </View>
           ),

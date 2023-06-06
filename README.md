@@ -22,19 +22,23 @@ Organ uses the [matrix-js-sdk](https://github.com/matrix-org/matrix-js-sdk/) to
 communicate with Matrix homeservers. The data model is likely to change and is
 currently as follows: Matrix rooms are used to represent host calendars, with
 caledar events stored as Matrix events in the room timeline. Each event is a
-custom Matrix message event, `directory.radical.event.vX.X`, and contains the
-event name, start and end times, venue, and other metadata. Each of these can
-then become a thread in the room, in which users can post comments and ask
-questions.
+custom Matrix message event, `directory.radical.event.unstable` (to be replaced
+with a versioned event type), and contains the event name, start and end times,
+venue, and other metadata. Each of these can then become a thread in the room,
+in which users can post comments and ask questions.
 
 An alternative under consideration is that each event is itself a Matrix room.
 This would allow for more fine-grained control over access to events, and would
-allow for events to be shared between calendars. This could also allow a more
-Facebook-style posts and replies model, as each post could be the start of a
-thread. The challenge to this approach right now lies in distributing metadata
-about events between calendars in a way that allows that metadata to be
-encrypted (i.e. not part of the room state) while avoiding inconsistencies
-between calendars.
+allow for events to be shared between calendars. This makes it easier to invite
+people to events without having to invite them to calendars, and could also
+allow a more Facebook-style posts and replies model, as each message-type post
+in the room could be the start of a thread.
+
+The challenge to this approach right now lies in distributing metadata about
+events between calendars in a way that allows that metadata to be encrypted
+(i.e. not part of the room state) while avoiding inconsistencies between
+calendars. A simple appoach is to trust certain clients with copying the
+metadata across calendars.
 
 ## Features
 

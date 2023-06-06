@@ -17,7 +17,7 @@ export function HostingScreen({
         text="Go to home screen!"
       />
       <LinkButton
-        onPress={() => navigation.getParent()?.navigate("ChooseHost")}
+        onPress={() => navigation.getParent()?.navigate("CreateEvent")}
         text="Create New Event"
       />
     </View>

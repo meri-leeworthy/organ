@@ -50,8 +50,7 @@ export default function useMatrixClient(): {
           type: "ADD_MATRIX_ROOM",
           roomId: room.roomId,
           roomName: room.name,
-          events: new Set(),
-          isCalendar: false,
+          roomType: undefined,
         });
       });
     }
@@ -95,7 +94,7 @@ export default function useMatrixClient(): {
         if (toStartOfTimeline) {
           return; // don't print paginated results
         }
-        if (event.getType() !== "directory.radical.event.v1") {
+        if (event.getType() !== "directory.radical.event.unstable") {
           return; // only print messages
         }
         console.log(
@@ -113,6 +112,7 @@ export default function useMatrixClient(): {
           description: event.getContent().description,
           venue: event.getContent().venue,
           calendarId: room.roomId,
+          roomId: event.getContent().roomId,
         });
       }
     );
