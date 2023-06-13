@@ -65,9 +65,9 @@ window.document = window.document || new Document();
 //end polyfill
 
 export default function App() {
-  const { isLoadingComplete, ...initialState } = useCachedResources();
-  const { matrixRoomIds, rooms: calendars, events } = initialState;
   const colorScheme = useColorScheme();
+
+  const { isLoadingComplete } = useCachedResources();
 
   if (!isLoadingComplete) {
     return null;
@@ -77,10 +77,10 @@ export default function App() {
         <StateProvider
           reducer={reducer}
           initialState={{
-            calendars,
+            calendars: new Map(),
             client: undefined,
-            matrixRoomIds,
-            events,
+            matrixRoomIds: new Set(),
+            events: new Map(),
           }}>
           <Navigation colorScheme={colorScheme} />
           <StatusBar />

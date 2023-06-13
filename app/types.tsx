@@ -2,13 +2,9 @@
  * Learn more about using TypeScript with React Navigation:
  * https://reactnavigation.org/docs/typescript/
  */
+import { z } from "zod";
 
-import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { DrawerScreenProps } from "@react-navigation/drawer";
-import {
-  CompositeScreenProps,
-  NavigatorScreenParams,
-} from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MatrixClient } from "matrix-js-sdk";
 
@@ -54,46 +50,77 @@ export type RootDrawerScreenProps<Screen extends keyof RootDrawerParamList> =
   DrawerScreenProps<RootDrawerParamList, Screen>;
 
 // type MatrixRoomID = `!${string}:${string}`;
-type MatrixRoomID = string;
+const MatrixRoomID = z.string();
+type MatrixRoomID = z.infer<typeof MatrixRoomID>;
+const CalendarID = MatrixRoomID;
 type CalendarID = MatrixRoomID;
+
+const MatrixEventID = z.string();
+type MatrixEventID = z.infer<typeof MatrixEventID>;
+
 // type MatrixEventID = `$${string}`;
-export type MatrixEventID = string;
 
-type DirectoryRadicalEventUnstable = {
-  date: Date;
-  name: string;
-  description: string;
-  venue: string;
-  eventId: MatrixEventID;
-  calendarId: CalendarID;
-  roomId: MatrixRoomID | undefined;
-};
+const DirectoryRadicalEventUnstable = z.object({
+  date: z.date(),
+  name: z.string(),
+  description: z.string(),
+  venue: z.string(),
+  eventId: MatrixEventID,
+  rootEventRoomId: z.string().optional(),
+});
 
-export type MatrixCalendarEvent = DirectoryRadicalEventUnstable;
+type DirectoryRadicalEventUnstable = z.infer<
+  typeof DirectoryRadicalEventUnstable
+>;
 
-export type MatrixStandardRoom = {
-  roomName: string;
-  roomId: MatrixRoomID;
-  roomType: undefined; //should be stored in the room state
-};
+const DirectoryRadicalEventRootUnstable = DirectoryRadicalEventUnstable.extend({
+  sharedEventIds: z.map(CalendarID, MatrixEventID),
+});
 
-export type MatrixCalendarRoom = {
-  roomName: string;
-  roomId: MatrixRoomID;
-  roomType: "calendar";
-  events: Set<MatrixEventID> | {};
-};
+type DirectoryRadicalEventRootUnstable = z.infer<
+  typeof DirectoryRadicalEventRootUnstable
+>;
 
-export type MatrixEventRoom = {
-  roomName: string;
-  roomId: MatrixRoomID;
-  roomType: "event";
-  rootEventId: MatrixEventID; // event in the room (not room state: can be encrypted)
-  sharedEventIds: Map<CalendarID, MatrixEventID>; // note that this means if and where the event is shared is stored in the room state
-};
+export const MatrixCalendarEvent = DirectoryRadicalEventRootUnstable;
+export type MatrixCalendarEvent = DirectoryRadicalEventRootUnstable;
 
-type MatrixRoom = MatrixStandardRoom | MatrixCalendarRoom | MatrixEventRoom;
+const MatrixStandardRoom = z.object({
+  roomName: z.string(),
+  roomId: MatrixRoomID,
+  roomType: z.undefined(), //should be stored in the room state
+});
 
+export type MatrixStandardRoom = z.infer<typeof MatrixStandardRoom>;
+
+export const MatrixCalendarRoom = z.object({
+  roomName: z.string(),
+  roomId: MatrixRoomID,
+  roomType: z.literal("calendar"),
+  events: z.union([z.map(MatrixRoomID, MatrixEventID), z.array(z.string())]), //room id of room where root event is stored
+});
+
+export type MatrixCalendarRoom = z.infer<typeof MatrixCalendarRoom>;
+
+export const MatrixRootEventRoom = z.object({
+  roomName: z.string(),
+  roomId: MatrixRoomID,
+  roomType: z.literal("event"),
+  rootEventId: MatrixEventID,
+});
+
+export type MatrixRootEventRoom = z.infer<typeof MatrixRootEventRoom>;
+
+const MatrixRoom = z.discriminatedUnion("roomName", [
+  MatrixStandardRoom,
+  MatrixCalendarRoom,
+  MatrixRootEventRoom,
+]);
+export type MatrixRoom =
+  | MatrixStandardRoom
+  | MatrixCalendarRoom
+  | MatrixRootEventRoom;
+
+const MatrixRoomList = z.set(MatrixRoomID);
 export type MatrixRoomList = Set<MatrixRoomID>;
 
 // export type ICalendar = {
@@ -102,33 +129,34 @@ export type MatrixRoomList = Set<MatrixRoomID>;
 //   name: string;
 // };
 
-type Calendar = MatrixRoom;
+const Calendar = MatrixCalendarRoom;
+type Calendar = MatrixCalendarRoom;
 
-export type OrganGlobalState = {
-  calendars: Map<CalendarID, Calendar>;
+const OrganGlobalStateWithoutClient = z.object({
+  calendars: z.map(CalendarID, Calendar),
+  matrixRoomIds: MatrixRoomList,
+  events: z.map(MatrixEventID, MatrixCalendarEvent),
+});
+
+export type OrganGlobalState = z.infer<typeof OrganGlobalStateWithoutClient> & {
   client: MatrixClient | undefined;
-  matrixRoomIds: MatrixRoomList;
-  events: Map<MatrixEventID, MatrixCalendarEvent>;
 };
 
 type DataAction<TData extends {}, TName extends string> = TData & {
   type: TName;
 };
 
-export type Action<T> =
+export type Action =
+  | DataAction<OrganGlobalState, "INITIALISE_STATE">
   | DataAction<{ client: MatrixClient }, "SET_CLIENT">
   | DataAction<{ matrixRooms: MatrixRoomList }, "SET_MATRIX_ROOMS">
   // | DataAction<ICalendar, "ADD_ICALENDAR">
-  | DataAction<MatrixRoom, "ADD_MATRIX_ROOM">
-  | DataAction<MatrixRoom, "UPDATE_MATRIX_ROOM">
-  | DataAction<{ roomId: MatrixRoomID }, "DELETE_MATRIX_ROOM">
-  | DataAction<MatrixCalendarEvent, "ADD_MATRIX_EVENT">
-  | DataAction<MatrixCalendarEvent, "UPDATE_MATRIX_EVENT">
+  | DataAction<MatrixRoom, "SET_MATRIX_CALENDAR">
+  | DataAction<{ roomId: MatrixRoomID }, "DELETE_MATRIX_CALENDAR">
+  | DataAction<MatrixCalendarEvent, "SET_MATRIX_EVENT">
   | DataAction<{ eventId: MatrixEventID }, "DELETE_MATRIX_EVENT">;
 
 export type AsyncStorageKey = "matrixRoomIds" | MatrixRoomID | MatrixEventID;
-export type AsyncStorageValue<T> = T extends "matrixRoomIds"
+export type AsyncStorageValue<T, U> = T extends "matrixRoomIds"
   ? MatrixRoomID[]
-  : T extends MatrixRoomID | MatrixEventID
-  ? MatrixRoom | MatrixCalendarEvent
-  : never;
+  : U;
