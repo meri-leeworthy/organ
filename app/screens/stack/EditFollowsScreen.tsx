@@ -78,10 +78,10 @@ export function EditFollowsScreen() {
       console.log("ROOM", room);
       if (room) {
         dispatch({
-          type: "ADD_MATRIX_ROOM",
+          type: "SET_MATRIX_CALENDAR",
           roomId,
           roomName: room.roomName,
-          events: new Set(),
+          events: new Map(),
           roomType: "calendar",
         });
         setLoading(false);
@@ -111,10 +111,10 @@ export function EditFollowsScreen() {
           onPress: () => {
             console.log("OK Pressed, adding room to calendars");
             dispatch({
-              type: "ADD_MATRIX_ROOM",
+              type: "SET_MATRIX_CALENDAR",
               roomId: room.roomId,
               roomName: room.roomName,
-              events: new Set(),
+              events: new Map(),
               roomType: "calendar",
             });
           },

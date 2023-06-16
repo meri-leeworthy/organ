@@ -57,6 +57,12 @@ export function reviver(_key: unknown, value: unknown) {
   return value;
 }
 
-export function valuesOrEmptyArray<T>(maybeSet: Set<T> | T[]) {
+export function setValuesOrEmptyArray<T>(maybeSet: Set<T> | T[] | undefined) {
   return maybeSet instanceof Set ? [...maybeSet.values()] : [];
+}
+
+export function mapEntriesOrEmptyArray<T, U>(
+  maybeMap: Map<T, U> | undefined
+): [T, U][] {
+  return maybeMap instanceof Map ? [...maybeMap.entries()] : [];
 }

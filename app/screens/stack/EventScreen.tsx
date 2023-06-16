@@ -3,7 +3,7 @@ import { View, Text } from "app/components/Themed";
 import { RootStackParamList } from "app/types";
 import { useStateValue } from "app/state/context";
 import { useEffect } from "react";
-import { valuesOrEmptyArray } from "app/state/reducers";
+import { mapEntriesOrEmptyArray } from "app/lib/localStorage";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Event">;
 
@@ -14,19 +14,19 @@ export default function EventScreen(props: Props) {
 
   if (!thisEvent) return <Text>Event not found</Text>;
 
-  const thisCalendar = calendars.get(thisEvent?.calendarId);
+  const thisCalendar = calendars.get(thisEvent?.rootEventRoomId);
 
   useEffect(() => {
     if (!thisCalendar) return;
     if (
-      valuesOrEmptyArray(thisCalendar?.events).some(
-        event => event.eventId === thisEvent.eventId
+      mapEntriesOrEmptyArray(thisCalendar?.events).some(
+        event => event[1] === thisEvent.eventId
       )
     ) {
       return;
     }
     dispatch({
-      type: "ADD_MATRIX_EVENT",
+      type: "SET_MATRIX_EVENT",
       ...thisEvent,
     });
   }, []);
@@ -37,7 +37,7 @@ export default function EventScreen(props: Props) {
       <Text>Starts: {thisEvent.date.toDateString()}</Text>
       <Text>Venue: {thisEvent.venue}</Text>
       <Text>Description: {thisEvent.description}</Text>
-      <Text>Calendar: {thisEvent.calendarId}</Text>
+      <Text>Calendar: {thisEvent.rootEventRoomId}</Text>
     </View>
   );
 }

@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import * as SecureStore from "expo-secure-store";
 import { OrganGlobalState, Action } from "app/types";
-import { setAsyncStorage } from "./reducers";
+import { setAsyncStorage } from "app/lib/localStorage";
 
 export async function getClient() {
   const accessToken = await SecureStore.getItemAsync("accessToken");
@@ -26,7 +26,7 @@ export const StateContext = createContext<
 >([
   {
     calendars: new Map(),
-    client: undefined,
+    // client: undefined,
     matrixRoomIds: new Set(),
     events: new Map(),
   },

@@ -18,24 +18,25 @@ export default function useMatrixClient(): {
   setClient: (client: sdk.MatrixClient) => void;
   clientSyncState: ClientSyncState;
 } {
-  const [{ client }, dispatch] = useStateValue();
-  const [localClient, setLocalClient] = useState<sdk.MatrixClient | undefined>(
-    client
+  const [, dispatch] = useStateValue();
+  const [client, setClientRaw] = useState<sdk.MatrixClient | undefined>(
+    // client
+    undefined
   );
-  const [localClientChangeFlag, setLocalClientChangeFlag] = useState(false); //this is to force a rerender when the client changes, because of shallow object equality
+  const [clientChangeFlag, setClientChangeFlag] = useState(false); //this is to force a rerender when the client changes, because of shallow object equality
   const [clientSyncState, setClientSyncState] = useState<ClientSyncState>(null);
   // const attemptCount = useRetry(3);
 
-  function setClient(newClient: sdk.MatrixClient) {
+  function setClientAndSyncStateCallback(newClient: sdk.MatrixClient) {
     newClient.once(sdk.ClientEvent.Sync, (state: ClientSyncState) =>
       setClientSyncState(state)
     );
-    setLocalClient(newClient);
-    setLocalClientChangeFlag(true);
-    dispatch({
-      type: "SET_CLIENT",
-      client: newClient,
-    });
+    setClientRaw(newClient);
+    setClientChangeFlag(true);
+    // dispatch({
+    //   type: "SET_CLIENT",
+    //   client: newClient,
+    // });
   }
 
   useEffect(() => {
@@ -45,9 +46,11 @@ export default function useMatrixClient(): {
 
     if (roomIds && rooms.length > 0) {
       dispatch({ type: "SET_MATRIX_ROOMS", matrixRooms: roomIds });
+
+      //need to check if the room is a calendar room! currently this does nothing
       rooms.forEach(room => {
         dispatch({
-          type: "ADD_MATRIX_ROOM",
+          type: "SET_MATRIX_CALENDAR",
           roomId: room.roomId,
           roomName: room.name,
           roomType: undefined,
@@ -62,7 +65,7 @@ export default function useMatrixClient(): {
 
       if (!client) {
         const baseClient = sdk.createClient({ baseUrl: "https://matrix.org" });
-        setClient(baseClient);
+        setClientAndSyncStateCallback(baseClient);
         return;
       }
 
@@ -77,18 +80,18 @@ export default function useMatrixClient(): {
         client.setAccessToken(accessToken);
         const { user_id: userId } = await client.whoami();
         client.credentials.userId = userId;
-        setClient(client);
+        setClientAndSyncStateCallback(client);
       }
     }
     setClientWithTokenIfExists();
-  }, [client, localClient]);
+  }, [client]);
 
   useEffect(() => {
-    if (!localClient || !localClient.isLoggedIn()) return;
+    if (!client || !client.isLoggedIn()) return;
 
-    console.log(`Logged in as ${localClient.getUserId()}`);
+    console.log(`Logged in as ${client.getUserId()}`);
 
-    localClient.on(
+    client.on(
       sdk.RoomEvent.Timeline,
       function (event, room, toStartOfTimeline) {
         if (toStartOfTimeline) {
@@ -105,28 +108,28 @@ export default function useMatrixClient(): {
           JSON.stringify(event.getContent())
         );
         dispatch({
-          type: "ADD_MATRIX_EVENT",
+          type: "SET_MATRIX_EVENT",
           name: event.getContent().name,
           eventId: event.getId(),
           date: new Date(event.getContent().date),
           description: event.getContent().description,
           venue: event.getContent().venue,
-          calendarId: room.roomId,
-          roomId: event.getContent().roomId,
+          rootEventRoomId: event.getContent().roomId,
+          sharedEventIds: event.getContent().sharedEventIds,
         });
       }
     );
-    if (clientSyncState === null || "STOPPED") localClient.startClient();
+    if (clientSyncState === null || "STOPPED") client.startClient();
     return () => {
-      localClient.stopClient();
+      client.stopClient();
     };
-  }, [localClient, clientSyncState, localClientChangeFlag]);
+  }, [client, clientSyncState, clientChangeFlag]);
 
   useEffect(() => {
-    if (localClientChangeFlag) setLocalClientChangeFlag(false);
-  }, [localClientChangeFlag]);
+    if (clientChangeFlag) setClientChangeFlag(false);
+  }, [clientChangeFlag]);
 
-  return { client: localClient, setClient, clientSyncState };
+  return { client, setClient: setClientAndSyncStateCallback, clientSyncState };
 }
 
 // Here is some code that was added to the client config

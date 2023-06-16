@@ -66,7 +66,7 @@ const DirectoryRadicalEventUnstable = z.object({
   description: z.string(),
   venue: z.string(),
   eventId: MatrixEventID,
-  rootEventRoomId: z.string().optional(),
+  rootEventRoomId: z.string(),
 });
 
 type DirectoryRadicalEventUnstable = z.infer<
@@ -96,7 +96,8 @@ export const MatrixCalendarRoom = z.object({
   roomName: z.string(),
   roomId: MatrixRoomID,
   roomType: z.literal("calendar"),
-  events: z.union([z.map(MatrixRoomID, MatrixEventID), z.array(z.string())]), //room id of room where root event is stored
+  events: z.map(MatrixRoomID, MatrixEventID), //room id of room where root event is stored
+  // events: z.union([z.map(MatrixRoomID, MatrixEventID), z.array(z.string())]), //delete me if not needed
 });
 
 export type MatrixCalendarRoom = z.infer<typeof MatrixCalendarRoom>;
@@ -110,7 +111,7 @@ export const MatrixRootEventRoom = z.object({
 
 export type MatrixRootEventRoom = z.infer<typeof MatrixRootEventRoom>;
 
-const MatrixRoom = z.discriminatedUnion("roomName", [
+const MatrixRoom = z.union([
   MatrixStandardRoom,
   MatrixCalendarRoom,
   MatrixRootEventRoom,
@@ -139,7 +140,7 @@ const OrganGlobalStateWithoutClient = z.object({
 });
 
 export type OrganGlobalState = z.infer<typeof OrganGlobalStateWithoutClient> & {
-  client: MatrixClient | undefined;
+  // client: MatrixClient | undefined;
 };
 
 type DataAction<TData extends {}, TName extends string> = TData & {
@@ -148,7 +149,7 @@ type DataAction<TData extends {}, TName extends string> = TData & {
 
 export type Action =
   | DataAction<OrganGlobalState, "INITIALISE_STATE">
-  | DataAction<{ client: MatrixClient }, "SET_CLIENT">
+  // | DataAction<{ client: MatrixClient }, "SET_CLIENT">
   | DataAction<{ matrixRooms: MatrixRoomList }, "SET_MATRIX_ROOMS">
   // | DataAction<ICalendar, "ADD_ICALENDAR">
   | DataAction<MatrixRoom, "SET_MATRIX_CALENDAR">

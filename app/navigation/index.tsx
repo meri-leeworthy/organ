@@ -58,7 +58,7 @@ export default function Navigation({
 
       dispatch({
         type: "INITIALISE_STATE",
-        client: undefined,
+        // client: undefined,
         calendars: new Map(validatedCalendars),
         events: new Map(validatedEvents),
         matrixRoomIds: new Set(parsedMatrixRooms),

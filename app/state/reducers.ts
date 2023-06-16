@@ -1,4 +1,4 @@
-import { valuesOrEmptyArray } from "app/lib/localStorage";
+import { mapEntriesOrEmptyArray } from "app/lib/localStorage";
 import { OrganGlobalState, Action } from "app/types";
 import { Reducer } from "react";
 
@@ -15,11 +15,11 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
         ...initialState,
       };
 
-    case "SET_CLIENT":
-      return {
-        ...state,
-        client: action.client,
-      };
+    // case "SET_CLIENT":
+    //   return {
+    //     ...state,
+    //     client: action.client,
+    //   };
 
     case "SET_MATRIX_ROOMS":
       return {
@@ -41,22 +41,28 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
       };
 
     case "DELETE_MATRIX_CALENDAR":
-      const calendarsWithoutRoom = new Map(state.calendars);
-      calendarsWithoutRoom.delete(action.roomId);
+      const calendarsWithoutCalendar = new Map(state.calendars);
+      calendarsWithoutCalendar.delete(action.roomId);
+
       return {
         ...state,
-        calendars: calendarsWithoutRoom,
+        calendars: calendarsWithoutCalendar,
       };
 
     case "SET_MATRIX_EVENT":
-      const { type: _, ...eventAdding } = action;
-      const eventCalendar = state.calendars.get(action.calendarId)!;
-      // if the calendar doesn't exist something is wrong... fix me
+      const { type: _, ...newEvent } = action;
+      const eventCalendar = state.calendars.get(action.rootEventRoomId);
 
-      const newCalendars = state.calendars.has(action.calendarId)
-        ? new Map(state.calendars).set(action.calendarId, {
+      if (!eventCalendar) {
+        console.log(`No calendar found for event ${action.eventId}`);
+        return state;
+      }
+
+      const newCalendars = state.calendars.has(action.rootEventRoomId)
+        ? new Map(state.calendars).set(action.rootEventRoomId, {
             ...eventCalendar,
-            events: new Set(valuesOrEmptyArray(eventCalendar.events)).add(
+            events: new Map(mapEntriesOrEmptyArray(eventCalendar?.events)).set(
+              action.rootEventRoomId,
               action.eventId
             ),
           })
@@ -65,36 +71,38 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
       return {
         ...state,
         calendars: newCalendars,
-        events: new Map(state.events).set(action.eventId, eventAdding),
-      };
-
-    case "UPDATE_MATRIX_EVENT":
-      const { type: __, ...eventUpdating } = action;
-
-      return {
-        ...state,
-        events: new Map(state.events).set(action.eventId, eventUpdating),
+        events: new Map(state.events).set(action.eventId, newEvent),
       };
 
     case "DELETE_MATRIX_EVENT":
-      const calendarId = state.events.get(action.eventId)!.calendarId;
+      if (!state.events.has(action.eventId)) {
+        console.log(`No event found for event ${action.eventId}`);
+        return state;
+      }
 
+      const calendarId = state.events.get(action.eventId)!.rootEventRoomId;
       const events = new Map(state.events);
       events.delete(action.eventId);
+
+      if (!state.calendars.has(calendarId)) {
+        console.log(`No calendar found for event ${action.eventId}`);
+        return { ...state, events };
+      }
+
       const calendarWithDeletedEvent = state.calendars.get(calendarId)!;
-      const eventsWithoutEvent = new Set(
-        valuesOrEmptyArray(calendarWithDeletedEvent.events)
+      const calendarEventsWithoutEvent = new Map(
+        mapEntriesOrEmptyArray(calendarWithDeletedEvent.events)
       );
-      eventsWithoutEvent.delete(action.eventId);
-      const calendars = new Map(state.calendars).set(calendarId, {
-        ...calendarWithDeletedEvent,
-        events: eventsWithoutEvent,
-      });
+
+      calendarEventsWithoutEvent.delete(action.eventId);
 
       return {
         ...state,
         events,
-        calendars,
+        calendars: new Map(state.calendars).set(calendarId, {
+          ...calendarWithDeletedEvent,
+          events: calendarEventsWithoutEvent,
+        }),
       };
 
     default:

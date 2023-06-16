@@ -76,7 +76,7 @@ export function FollowingScreen({
           return (
             <Item
               calEvent={item}
-              calendarName={calendars.get(item.calendarId)?.roomName}
+              calendarName={calendars.get(item.rootEventRoomId)?.roomName}
             />
           );
       }}
