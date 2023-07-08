@@ -2,16 +2,13 @@ import * as sdk from "matrix-js-sdk";
 import { useStateValue } from "../state/context";
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useState } from "react";
-import { useRetry } from "./useRetry";
-
-type ClientSyncState =
-  | null
-  | "PREPARED"
-  | "SYNCING"
-  | "STOPPED"
-  | "CATCHUP"
-  | "RECONNECTING"
-  | "ERROR";
+import {
+  ClientSyncState,
+  EventUnstableEventType,
+  IsCalendarEventType,
+  RootEventIdEventType,
+} from "app/types";
+// import { useRetry } from "./useRetry";
 
 export default function useMatrixClient(): {
   client: sdk.MatrixClient | undefined;
@@ -19,10 +16,7 @@ export default function useMatrixClient(): {
   clientSyncState: ClientSyncState;
 } {
   const [, dispatch] = useStateValue();
-  const [client, setClientRaw] = useState<sdk.MatrixClient | undefined>(
-    // client
-    undefined
-  );
+  const [client, setClient] = useState<sdk.MatrixClient | undefined>(undefined);
   const [clientChangeFlag, setClientChangeFlag] = useState(false); //this is to force a rerender when the client changes, because of shallow object equality
   const [clientSyncState, setClientSyncState] = useState<ClientSyncState>(null);
   // const attemptCount = useRetry(3);
@@ -31,12 +25,8 @@ export default function useMatrixClient(): {
     newClient.once(sdk.ClientEvent.Sync, (state: ClientSyncState) =>
       setClientSyncState(state)
     );
-    setClientRaw(newClient);
+    setClient(newClient);
     setClientChangeFlag(true);
-    // dispatch({
-    //   type: "SET_CLIENT",
-    //   client: newClient,
-    // });
   }
 
   useEffect(() => {
@@ -47,14 +37,56 @@ export default function useMatrixClient(): {
     if (roomIds && rooms.length > 0) {
       dispatch({ type: "SET_MATRIX_ROOMS", matrixRooms: roomIds });
 
-      //need to check if the room is a calendar room! currently this does nothing
       rooms.forEach(room => {
+        getRoomTypeAndStore(room);
+      });
+    }
+
+    async function getRoomTypeAndStore(room: sdk.Room) {
+      const isCalendar = await client?.getStateEvent(
+        room.roomId,
+        IsCalendarEventType.value,
+        ""
+      );
+
+      if (isCalendar) {
         dispatch({
           type: "SET_MATRIX_CALENDAR",
           roomId: room.roomId,
           roomName: room.name,
           roomType: undefined,
         });
+        return;
+      }
+
+      if (room.getType() === "event") {
+        const event = await client?.getStateEvent(
+          room.roomId,
+          RootEventIdEventType.value,
+          ""
+        );
+        console.log("event:", event);
+
+        // then get the event from the root event room
+
+        // dispatch({
+        //   type: "SET_MATRIX_EVENT",
+        //   name: room.name,
+        //   eventId: undefined,
+        //   date: undefined,
+        //   description: undefined,
+        //   venue: undefined,
+        //   rootEventRoomId: undefined,
+        //   sharedEventIds: undefined,
+        // });
+        return;
+      }
+
+      dispatch({
+        type: "SET_MATRIX_STANDARD_ROOM",
+        roomId: room.roomId,
+        roomName: room.name,
+        roomType: undefined,
       });
     }
   }, [clientSyncState]);
@@ -97,7 +129,7 @@ export default function useMatrixClient(): {
         if (toStartOfTimeline) {
           return; // don't print paginated results
         }
-        if (event.getType() !== "directory.radical.event.unstable") {
+        if (event.getType() !== EventUnstableEventType.value) {
           return; // only print messages
         }
         console.log(

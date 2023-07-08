@@ -25,7 +25,7 @@ export function FollowingScreen({
   navigation,
 }: RootDrawerScreenProps<"Following">) {
   const [{ events, calendars }] = useStateValue();
-  // const { drawerIsOpen } = route.params;
+
   useMatrixClient();
 
   useEffect(() => {
@@ -62,13 +62,11 @@ export function FollowingScreen({
     </Pressable>
   );
 
-  const data = [...events.values()].sort((a, b) =>
-    a.date.getTime() > b.date.getTime() ? 1 : -1
-  );
+  const data = sortEventsAndInsertSectionHeaders(events);
 
   return (
     <FlashList
-      data={insertSectionHeaders(data)}
+      data={data}
       renderItem={({ item }) => {
         if (typeof item === "string")
           return <Text style={styles.sectionHeader}>{item}</Text>;
@@ -104,17 +102,27 @@ const styles = StyleSheet.create({
   },
 });
 
-const insertSectionHeaders = (events: MatrixCalendarEvent[]) => {
-  const sortedEvents = [...events].sort((a, b) =>
+const sortEventsAndInsertSectionHeaders = (
+  events: Map<string, MatrixCalendarEvent>
+) => {
+  const data = [...events.values()].sort((a, b) =>
     a.date.getTime() > b.date.getTime() ? 1 : -1
   );
-  const result = sortedEvents.reduce((acc, event) => {
-    const date = event.date.toDateString();
-    if (acc.length === 0 || acc[acc.length - 1] !== date) {
-      acc.push(date);
-    }
-    acc.push(event);
-    return acc;
-  }, [] as (string | MatrixCalendarEvent)[]);
-  return result;
+
+  const insertSectionHeaders = (events: MatrixCalendarEvent[]) => {
+    const sortedEvents = [...events].sort((a, b) =>
+      a.date.getTime() > b.date.getTime() ? 1 : -1
+    );
+    const result = sortedEvents.reduce((acc, event) => {
+      const date = event.date.toDateString();
+      if (acc.length === 0 || acc[acc.length - 1] !== date) {
+        acc.push(date);
+      }
+      acc.push(event);
+      return acc;
+    }, [] as (string | MatrixCalendarEvent)[]);
+    return result;
+  };
+
+  return insertSectionHeaders(data);
 };

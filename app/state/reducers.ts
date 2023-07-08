@@ -1,11 +1,11 @@
-import { mapEntriesOrEmptyArray } from "app/lib/localStorage";
+import { mapEntriesOrEmptyArray, replacer } from "app/lib/localStorage";
 import { OrganGlobalState, Action } from "app/types";
 import { Reducer } from "react";
 
 // TODO: Matrix calendar add/delete should update the room list, so should event add/delete
 
 export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
-  console.log(`reducer: ${JSON.stringify(action)}`);
+  console.log(`reducer: ${JSON.stringify(action, replacer)}`);
 
   switch (action.type) {
     case "INITIALISE_STATE":
@@ -105,6 +105,30 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
         }),
       };
 
+    case "SET_MATRIX_STANDARD_ROOM":
+      if (action.roomType === "calendar" || action.roomType === "event") {
+        console.log(`Not a standard room`);
+        return state;
+      }
+
+      const { type: ___type, ...standardRoom } = action;
+
+      return {
+        ...state,
+        standardRooms: new Map(state.standardRooms).set(
+          action.roomId,
+          standardRoom
+        ),
+      };
+
+    case "DELETE_MATRIX_STANDARD_ROOM":
+      const standardRoomsWithoutRoom = new Map(state.standardRooms);
+      standardRoomsWithoutRoom.delete(action.roomId);
+
+      return {
+        ...state,
+        standardRooms: standardRoomsWithoutRoom,
+      };
     default:
       return state;
   }

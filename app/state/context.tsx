@@ -26,7 +26,7 @@ export const StateContext = createContext<
 >([
   {
     calendars: new Map(),
-    // client: undefined,
+    standardRooms: new Map(),
     matrixRoomIds: new Set(),
     events: new Map(),
   },
@@ -44,7 +44,7 @@ export const StateProvider = ({
 }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const { calendars, events, matrixRoomIds } = state;
+  const { calendars, events, matrixRoomIds, standardRooms } = state;
 
   useEffect(() => {
     async function storeCalendars() {
@@ -74,6 +74,16 @@ export const StateProvider = ({
     }
     storeMatrixRoomIds();
   }, [matrixRoomIds]);
+
+  useEffect(() => {
+    async function storeStandardRooms() {
+      standardRooms.forEach((room, roomId) => {
+        console.log("storing standardRoom", roomId);
+        setAsyncStorage(roomId, room);
+      });
+    }
+    storeStandardRooms();
+  }, [standardRooms]);
 
   return (
     <StateContext.Provider value={[state, dispatch]}>

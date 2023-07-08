@@ -17,7 +17,7 @@ const URL_SCHEME = /^https?:\/\/[^\s/$.?#].[^\s]*$/;
 type UrlType = "none" | "matrix" | "ical";
 
 export function EditFollowsScreen() {
-  const [{ calendars }, dispatch] = useStateValue();
+  const [{ calendars, standardRooms }, dispatch] = useStateValue();
   const [url, setUrl] = useState("");
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +41,7 @@ export function EditFollowsScreen() {
     }
 
     // if calendar already exists, don't add it again
+    // this doesn't resolve room aliases :/ probs should hey
     if (calendars.has(url)) {
       setError("Calendar already exists");
       return;
@@ -115,7 +116,14 @@ export function EditFollowsScreen() {
               roomId: room.roomId,
               roomName: room.roomName,
               events: new Map(),
-              roomType: "calendar",
+              roomType: "calendar", //this despite the room 'type' not having been set? inconsistency hmm
+              // the goal UX, i think, is that users can post events in standard non-calendar rooms and treat them
+              // as calendars, OR they can create new calendar rooms. The difference is that calendar rooms have
+              //
+            });
+            dispatch({
+              type: "DELETE_MATRIX_STANDARD_ROOM",
+              roomId: room.roomId,
             });
           },
         },
@@ -133,23 +141,19 @@ export function EditFollowsScreen() {
       {isLoading && <Text>Loading...</Text>}
       {error && <Text style={{ color: "red" }}>{error}</Text>}
       <Text style={styles.heading}>My Calendars</Text>
-      {[...calendars.values()]
-        .filter(c => c.roomType === "calendar")
-        .map(calendar => (
-          <View key={calendar.roomId} style={styles.calendar}>
-            <Text>{calendar.roomName}</Text>
-          </View>
-        ))}
+      {[...calendars.values()].map(calendar => (
+        <View key={calendar.roomId} style={styles.calendar}>
+          <Text>{calendar.roomName}</Text>
+        </View>
+      ))}
       <Text style={styles.heading}>My Matrix Rooms</Text>
-      {[...calendars.values()]
-        .filter(c => !(c.roomType === "calendar"))
-        .map((room, i) => (
-          <Pressable key={i} onPress={() => addRoomToCalendarsAlert(room)}>
-            <View style={styles.calendar}>
-              <Text>{room.roomName}</Text>
-            </View>
-          </Pressable>
-        ))}
+      {[...standardRooms.values()].map((room, i) => (
+        <Pressable key={i} onPress={() => addRoomToCalendarsAlert(room)}>
+          <View style={styles.calendar}>
+            <Text>{room.roomName}</Text>
+          </View>
+        </Pressable>
+      ))}
     </View>
   );
 }

@@ -84,7 +84,7 @@ type DirectoryRadicalEventRootUnstable = z.infer<
 export const MatrixCalendarEvent = DirectoryRadicalEventRootUnstable;
 export type MatrixCalendarEvent = DirectoryRadicalEventRootUnstable;
 
-const MatrixStandardRoom = z.object({
+export const MatrixStandardRoom = z.object({
   roomName: z.string(),
   roomId: MatrixRoomID,
   roomType: z.undefined(), //should be stored in the room state
@@ -97,7 +97,6 @@ export const MatrixCalendarRoom = z.object({
   roomId: MatrixRoomID,
   roomType: z.literal("calendar"),
   events: z.map(MatrixRoomID, MatrixEventID), //room id of room where root event is stored
-  // events: z.union([z.map(MatrixRoomID, MatrixEventID), z.array(z.string())]), //delete me if not needed
 });
 
 export type MatrixCalendarRoom = z.infer<typeof MatrixCalendarRoom>;
@@ -130,18 +129,26 @@ export type MatrixRoomList = Set<MatrixRoomID>;
 //   name: string;
 // };
 
+export type ClientSyncState =
+  | null
+  | "PREPARED"
+  | "SYNCING"
+  | "STOPPED"
+  | "CATCHUP"
+  | "RECONNECTING"
+  | "ERROR";
+
 const Calendar = MatrixCalendarRoom;
 type Calendar = MatrixCalendarRoom;
 
-const OrganGlobalStateWithoutClient = z.object({
+const OrganGlobalState = z.object({
   calendars: z.map(CalendarID, Calendar),
+  standardRooms: z.map(MatrixRoomID, MatrixStandardRoom),
   matrixRoomIds: MatrixRoomList,
   events: z.map(MatrixEventID, MatrixCalendarEvent),
 });
 
-export type OrganGlobalState = z.infer<typeof OrganGlobalStateWithoutClient> & {
-  // client: MatrixClient | undefined;
-};
+export type OrganGlobalState = z.infer<typeof OrganGlobalState>;
 
 type DataAction<TData extends {}, TName extends string> = TData & {
   type: TName;
@@ -155,9 +162,17 @@ export type Action =
   | DataAction<MatrixRoom, "SET_MATRIX_CALENDAR">
   | DataAction<{ roomId: MatrixRoomID }, "DELETE_MATRIX_CALENDAR">
   | DataAction<MatrixCalendarEvent, "SET_MATRIX_EVENT">
-  | DataAction<{ eventId: MatrixEventID }, "DELETE_MATRIX_EVENT">;
+  | DataAction<{ eventId: MatrixEventID }, "DELETE_MATRIX_EVENT">
+  | DataAction<MatrixStandardRoom, "SET_MATRIX_STANDARD_ROOM">
+  | DataAction<{ roomId: MatrixRoomID }, "DELETE_MATRIX_STANDARD_ROOM">;
 
 export type AsyncStorageKey = "matrixRoomIds" | MatrixRoomID | MatrixEventID;
 export type AsyncStorageValue<T, U> = T extends "matrixRoomIds"
   ? MatrixRoomID[]
   : U;
+
+export const IsCalendarEventType = z.literal("directory.radical.isCalendar");
+export const RootEventIdEventType = z.literal("directory.radical.rootEventId");
+export const EventUnstableEventType = z.literal(
+  "directory.radical.event.unstable"
+);
