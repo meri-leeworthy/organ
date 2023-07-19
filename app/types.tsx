@@ -171,7 +171,7 @@ export type AsyncStorageValue<T, U> = T extends "matrixRoomIds"
   ? MatrixRoomID[]
   : U;
 
-export const IsCalendarEventType = z.literal("directory.radical.isCalendar");
+export const RoomTypeEventType = z.literal("directory.radical.roomType");
 export const RootEventIdEventType = z.literal("directory.radical.rootEventId");
 export const EventUnstableEventType = z.literal(
   "directory.radical.event.unstable"

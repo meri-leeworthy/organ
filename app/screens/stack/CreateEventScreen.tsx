@@ -25,11 +25,16 @@ import { useHeaderHeight } from "@react-navigation/elements";
 import { useStateValue } from "app/state/context";
 import { DismissKeyboard } from "app/components/DismissKeyboard";
 import { FontAwesome as FA } from "@expo/vector-icons";
-import { Preset, Visibility } from "matrix-js-sdk";
+import { Preset, Room, Visibility } from "matrix-js-sdk";
+import {
+  EventUnstableEventType,
+  RoomTypeEventType,
+  RootEventIdEventType,
+} from "app/types";
 // import { Preset, Visibility } from "matrix-js-sdk";
 
 export default function CreateEventScreen() {
-  const [{ calendars }] = useStateValue();
+  const [{ calendars }, dispatch] = useStateValue();
   // const [selectedCalendar, setSelectedCalendar] = useState("");
   const [eventName, setEventName] = useState("");
   const [venue, setVenue] = useState("");
@@ -51,6 +56,8 @@ export default function CreateEventScreen() {
 
   if (!client) return <Text>loading...</Text>;
 
+  //TODO: create a room with a 'root event' and a state event referencing the root event
+
   const handleCreateEvent = async () => {
     const newEvent = {
       name: eventName,
@@ -68,16 +75,45 @@ export default function CreateEventScreen() {
       topic: description,
     });
 
-    //this should perhaps come at a later step in the flow
-    // await client.sendEvent(
-    //   selectedCalendar,
-    //   "directory.radical.event.unstable",
-    //   newEvent,
-    //   "",
-    //   (err, res) => {
-    //     console.log(err);
-    //   }
-    // );
+    // this should perhaps come at a later step in the flow
+    const rootEventId = await client.sendEvent(
+      newEventRoomID.room_id,
+      EventUnstableEventType.value,
+      newEvent,
+      "",
+      (err, res) => {
+        console.log(err);
+      }
+    );
+
+    await client.sendStateEvent(
+      newEventRoomID.room_id,
+      RootEventIdEventType.value,
+      { root_event_id: rootEventId },
+      "",
+      (err, res) => {
+        console.log(err);
+      }
+    );
+
+    await client.sendStateEvent(
+      newEventRoomID.room_id,
+      RoomTypeEventType.value,
+      { room_type: "event" },
+      "",
+      (err, res) => {
+        console.log(err);
+      }
+    );
+
+    // no shared event ids yet - on the next page the user can choose where to share
+    dispatch({
+      type: "SET_MATRIX_EVENT",
+      ...newEvent,
+      eventId: rootEventId.event_id,
+      rootEventRoomId: newEventRoomID.room_id,
+      sharedEventIds: new Map(),
+    });
     // navigation.goBack();
   };
 

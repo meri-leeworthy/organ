@@ -10,13 +10,25 @@ import useMatrixClient from "app/hooks/useMatrixClient";
 import { SignUpScreen } from "./SignUpScreen";
 import { PasswordResetScreen } from "./PasswordResetScreen";
 import { EditFollowsScreen } from "./EditFollowsScreen";
+import { useEffect } from "react";
+import { useNavigation } from "@react-navigation/native";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 // TODO: Authentication conditional routing
 
 export function RootNavigator() {
-  const { client } = useMatrixClient();
+  const { client, setRefresh } = useMatrixClient();
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      setRefresh(true);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
   return (
     <Stack.Navigator>
       {client?.isLoggedIn() ? (

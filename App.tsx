@@ -78,8 +78,8 @@ export default function App() {
           reducer={reducer}
           initialState={{
             calendars: new Map(),
-            client: undefined,
             matrixRoomIds: new Set(),
+            standardRooms: new Map(),
             events: new Map(),
           }}>
           <Navigation colorScheme={colorScheme} />

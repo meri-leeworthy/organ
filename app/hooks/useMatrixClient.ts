@@ -5,19 +5,15 @@ import { useEffect, useState } from "react";
 import {
   ClientSyncState,
   EventUnstableEventType,
-  IsCalendarEventType,
+  RoomTypeEventType,
   RootEventIdEventType,
 } from "app/types";
 // import { useRetry } from "./useRetry";
 
-export default function useMatrixClient(): {
-  client: sdk.MatrixClient | undefined;
-  setClient: (client: sdk.MatrixClient) => void;
-  clientSyncState: ClientSyncState;
-} {
-  const [, dispatch] = useStateValue();
+export default function useMatrixClient() {
+  const [{ calendars, events }, dispatch] = useStateValue();
   const [client, setClient] = useState<sdk.MatrixClient | undefined>(undefined);
-  const [clientChangeFlag, setClientChangeFlag] = useState(false); //this is to force a rerender when the client changes, because of shallow object equality
+  const [refresh, setRefresh] = useState(false); //this is to force a rerender when the client changes, because of shallow object equality
   const [clientSyncState, setClientSyncState] = useState<ClientSyncState>(null);
   // const attemptCount = useRetry(3);
 
@@ -26,7 +22,7 @@ export default function useMatrixClient(): {
       setClientSyncState(state)
     );
     setClient(newClient);
-    setClientChangeFlag(true);
+    setRefresh(true);
   }
 
   useEffect(() => {
@@ -38,34 +34,44 @@ export default function useMatrixClient(): {
       dispatch({ type: "SET_MATRIX_ROOMS", matrixRooms: roomIds });
 
       rooms.forEach(room => {
+        console.log("got room:", room);
         getRoomTypeAndStore(room);
       });
     }
 
     async function getRoomTypeAndStore(room: sdk.Room) {
-      const isCalendar = await client?.getStateEvent(
+      const roomType = await client?.getStateEvent(
         room.roomId,
-        IsCalendarEventType.value,
+        RoomTypeEventType.value,
         ""
       );
 
-      if (isCalendar) {
+      console.log("got room type:", roomType);
+
+      if (roomType?.room_type === "calendar") {
+        if (calendars.has(room.roomId)) return;
+
+        // set a calendar with no events so they can be added incrementally
         dispatch({
           type: "SET_MATRIX_CALENDAR",
           roomId: room.roomId,
           roomName: room.name,
-          roomType: undefined,
+          roomType: "calendar",
+          events: new Map(),
         });
         return;
       }
 
-      if (room.getType() === "event") {
-        const event = await client?.getStateEvent(
+      if (roomType?.room_type === "event") {
+        const rootEventId = await client?.getStateEvent(
           room.roomId,
           RootEventIdEventType.value,
           ""
         );
-        console.log("event:", event);
+        console.log("got root event ID:", rootEventId);
+
+        //we need to work out wtf the 'record' getStateEvent is returning
+        // if (!rootEventId || !events.has(rootEventId)) {
 
         // then get the event from the root event room
 
@@ -89,7 +95,7 @@ export default function useMatrixClient(): {
         roomType: undefined,
       });
     }
-  }, [clientSyncState]);
+  }, [clientSyncState, refresh]);
 
   useEffect(() => {
     async function setClientWithTokenIfExists() {
@@ -155,70 +161,16 @@ export default function useMatrixClient(): {
     return () => {
       client.stopClient();
     };
-  }, [client, clientSyncState, clientChangeFlag]);
+  }, [client, clientSyncState, refresh]);
 
   useEffect(() => {
-    if (clientChangeFlag) setClientChangeFlag(false);
-  }, [clientChangeFlag]);
+    if (refresh) setRefresh(false);
+  }, [refresh]);
 
-  return { client, setClient: setClientAndSyncStateCallback, clientSyncState };
+  return {
+    client,
+    setClient: setClientAndSyncStateCallback,
+    clientSyncState,
+    setRefresh,
+  };
 }
-
-// Here is some code that was added to the client config
-// to try to make it work with a later version of matrix-js-sdk:
-
-// fetchFn: (req, args) => {
-//   const url =
-//     typeof req === "string" ? req : "url" in req ? req.url : req.href;
-//   const noqueries = url.split("?")[0];
-//   return fetch(noqueries, args);
-// },
-
-// async function isAccessTokenValid(client: sdk.MatrixClient) {
-//   if (!client) return false;
-//   if (!client.isLoggedIn()) return false;
-//   try {
-//     const id = await client.whoami();
-//     console.log("whoami:", id);
-//     return true;
-//   } catch {
-//     return false;
-//   }
-// }
-
-// if (await isAccessTokenValid(client)) {
-//   console.log("stored access token is valid, setting client");
-//   setClient(client);
-//   return;
-// }
-
-// console.log("stored access token was invalid, attempting to refresh token");
-
-// const refreshToken = await SecureStore.getItemAsync("refreshToken");
-
-// if (!refreshToken) throw new Error("No refresh token found");
-
-// console.log("refreshToken:", refreshToken);
-
-// try {
-// const res = await client.refreshToken(refreshToken);
-
-// console.log("refreshToken response:", res);
-
-// const newAccessToken = await SecureStore.setItemAsync(
-//   "accessToken",
-//   res.access_token
-// );
-// console.log("newAccessToken:", newAccessToken);
-// const newRefreshToken = await SecureStore.setItemAsync(
-//   "refreshToken",
-//   res.refresh_token
-// );
-// console.log("newRefreshToken:", newRefreshToken);
-
-// setClient(
-//   sdk.createClient({
-//     baseUrl: "https://matrix.org",
-//     accessToken: res.access_token,
-//   })
-// );

@@ -15,12 +15,6 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
         ...initialState,
       };
 
-    // case "SET_CLIENT":
-    //   return {
-    //     ...state,
-    //     client: action.client,
-    //   };
-
     case "SET_MATRIX_ROOMS":
       return {
         ...state,
@@ -106,11 +100,6 @@ export const reducer: Reducer<OrganGlobalState, Action> = (state, action) => {
       };
 
     case "SET_MATRIX_STANDARD_ROOM":
-      if (action.roomType === "calendar" || action.roomType === "event") {
-        console.log(`Not a standard room`);
-        return state;
-      }
-
       const { type: ___type, ...standardRoom } = action;
 
       return {
