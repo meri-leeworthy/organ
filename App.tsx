@@ -1,12 +1,38 @@
 import "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-
 import { useCachedResources } from "app/hooks/useCachedResources";
 import { useColorScheme } from "app/hooks/useColorScheme";
 import Navigation from "app/navigation";
 import { StateProvider } from "app/state/context";
 import { reducer } from "app/state/reducers";
+
+export default function App() {
+  const colorScheme = useColorScheme();
+
+  const { isLoadingComplete } = useCachedResources();
+
+  if (!isLoadingComplete) {
+    return null;
+  } else {
+    return (
+      <SafeAreaProvider>
+        <StateProvider
+          reducer={reducer}
+          initialState={{
+            user: {},
+            calendars: new Map(),
+            matrixRoomIds: new Set(),
+            standardRooms: new Map(),
+            events: new Map(),
+          }}>
+          <Navigation colorScheme={colorScheme} />
+          <StatusBar />
+        </StateProvider>
+      </SafeAreaProvider>
+    );
+  }
+}
 
 // the following code is a polyfill for the EventEmitter class and document object
 import { EventEmitter } from "fbemitter";
@@ -63,29 +89,3 @@ class Document {
 
 window.document = window.document || new Document();
 //end polyfill
-
-export default function App() {
-  const colorScheme = useColorScheme();
-
-  const { isLoadingComplete } = useCachedResources();
-
-  if (!isLoadingComplete) {
-    return null;
-  } else {
-    return (
-      <SafeAreaProvider>
-        <StateProvider
-          reducer={reducer}
-          initialState={{
-            calendars: new Map(),
-            matrixRoomIds: new Set(),
-            standardRooms: new Map(),
-            events: new Map(),
-          }}>
-          <Navigation colorScheme={colorScheme} />
-          <StatusBar />
-        </StateProvider>
-      </SafeAreaProvider>
-    );
-  }
-}

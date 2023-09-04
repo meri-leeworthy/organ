@@ -12,6 +12,8 @@ export function useCachedResources() {
       try {
         // SplashScreen.preventAutoHideAsync();
 
+        console.log("loading fonts");
+
         // Load fonts
         await Font.loadAsync({
           ...FontAwesome.font,

@@ -32,52 +32,57 @@ export default function Navigation({
 
   // Load data from local storage into global state
   useEffect(() => {
-    (async () => {
-      const parsedMatrixRooms = await getAsyncStorage("matrixRoomIds");
-      if (!parsedMatrixRooms) return;
-
-      const parsedRooms = await Promise.all(
-        parsedMatrixRooms.map((roomId: string) => getRoom(roomId))
-      );
-
-      const parsedCalendars = parsedRooms.filter(
-        parsedRoom => "data" in MatrixCalendarRoom.safeParse(parsedRoom[1])
-      );
-      const validatedCalendars = z
-        .array(z.tuple([z.string(), MatrixCalendarRoom]))
-        .parse(parsedCalendars);
-      if (!validatedCalendars) return;
-
-      const parsedStandardRooms = parsedRooms.filter(
-        parsedRoom => "data" in MatrixStandardRoom.safeParse(parsedRoom[1])
-      );
-      const validatedStandardRooms = z
-        .array(z.tuple([z.string(), MatrixStandardRoom]))
-        .parse(parsedStandardRooms);
-      if (!validatedStandardRooms) return;
-
-      const eventIdsMap = validatedCalendars.map(cal => cal[1].events);
-      const eventIds = z.array(z.string()).parse([...eventIdsMap.values()]);
-
-      console.log("eventIdsMap values", [...eventIdsMap.values()]);
-
-      const parsedEvents = await Promise.all(
-        eventIds.map((eventId: string) => getEvent(eventId))
-      );
-
-      const validatedEvents = z
-        .array(z.tuple([z.string(), MatrixCalendarEvent]))
-        .parse(parsedEvents);
-
-      dispatch({
-        type: "INITIALISE_STATE",
-        calendars: new Map(validatedCalendars),
-        events: new Map(validatedEvents),
-        matrixRoomIds: new Set(parsedMatrixRooms),
-        standardRooms: new Map(validatedStandardRooms),
-      });
-    })();
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    const parsedMatrixRooms = await getAsyncStorage("matrixRoomIds");
+    if (!parsedMatrixRooms) return;
+
+    const parsedRooms = await Promise.all(
+      parsedMatrixRooms.map((roomId: string) => getRoom(roomId))
+    );
+
+    const parsedCalendars = parsedRooms.filter(
+      parsedRoom => "data" in MatrixCalendarRoom.safeParse(parsedRoom[1])
+    );
+
+    const validatedCalendars = z
+      .array(z.tuple([z.string(), MatrixCalendarRoom]))
+      .parse(parsedCalendars);
+    if (!validatedCalendars) return;
+
+    const parsedStandardRooms = parsedRooms.filter(
+      parsedRoom => "data" in MatrixStandardRoom.safeParse(parsedRoom[1])
+    );
+
+    const validatedStandardRooms = z
+      .array(z.tuple([z.string(), MatrixStandardRoom]))
+      .parse(parsedStandardRooms);
+    if (!validatedStandardRooms) return;
+
+    const eventIdsMap = validatedCalendars.map(cal => cal[1].events);
+    const eventIds = z.array(z.string()).parse([...eventIdsMap.values()]);
+
+    console.log("eventIdsMap values", [...eventIdsMap.values()]);
+
+    const parsedEvents = await Promise.all(
+      eventIds.map((eventId: string) => getEvent(eventId))
+    );
+
+    const validatedEvents = z
+      .array(z.tuple([z.string(), MatrixCalendarEvent]))
+      .parse(parsedEvents);
+
+    dispatch({
+      type: "INITIALISE_STATE",
+      user: {},
+      calendars: new Map(validatedCalendars),
+      events: new Map(validatedEvents),
+      matrixRoomIds: new Set(parsedMatrixRooms),
+      standardRooms: new Map(validatedStandardRooms),
+    });
+  };
 
   return (
     <NavigationContainer

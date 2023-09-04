@@ -25,6 +25,7 @@ export const StateContext = createContext<
   [OrganGlobalState, React.Dispatch<Action>]
 >([
   {
+    user: {},
     calendars: new Map(),
     standardRooms: new Map(),
     matrixRoomIds: new Set(),
@@ -44,7 +45,15 @@ export const StateProvider = ({
 }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const { calendars, events, matrixRoomIds, standardRooms } = state;
+  const { user, calendars, events, matrixRoomIds, standardRooms } = state;
+
+  useEffect(() => {
+    async function storeUser() {
+      console.log("storing user", user);
+      setAsyncStorage("user", user);
+    }
+    storeUser();
+  }, [user]);
 
   useEffect(() => {
     async function storeCalendars() {

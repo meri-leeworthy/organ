@@ -106,6 +106,8 @@ export default function CreateEventScreen() {
       }
     );
 
+    console.log("sent state events to room");
+
     // no shared event ids yet - on the next page the user can choose where to share
     dispatch({
       type: "SET_MATRIX_EVENT",

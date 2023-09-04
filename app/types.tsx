@@ -67,6 +67,7 @@ const DirectoryRadicalEventUnstable = z.object({
   venue: z.string(),
   eventId: MatrixEventID,
   rootEventRoomId: z.string(),
+  isDraft: z.optional(z.boolean()),
 });
 
 type DirectoryRadicalEventUnstable = z.infer<
@@ -141,7 +142,15 @@ export type ClientSyncState =
 const Calendar = MatrixCalendarRoom;
 type Calendar = MatrixCalendarRoom;
 
+const User = z.object({
+  privateCalendar: z.optional(CalendarID),
+  // userId: z.string(),
+  // displayName: z.string(),
+  // avatarUrl: z.string(),
+});
+
 const OrganGlobalState = z.object({
+  user: User,
   calendars: z.map(CalendarID, Calendar),
   standardRooms: z.map(MatrixRoomID, MatrixStandardRoom),
   matrixRoomIds: MatrixRoomList,

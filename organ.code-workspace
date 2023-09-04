@@ -11,6 +11,9 @@
     },
     {
       "path": "../../radical.directory"
+    },
+    {
+      "path": "../test-app"
     }
   ],
   "settings": {}

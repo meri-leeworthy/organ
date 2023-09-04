@@ -40,6 +40,7 @@ export default function useMatrixClient() {
     }
 
     async function getRoomTypeAndStore(room: sdk.Room) {
+      console.log("getting room type for:", room.roomId);
       const roomType = await client?.getStateEvent(
         room.roomId,
         RoomTypeEventType.value,
@@ -70,10 +71,13 @@ export default function useMatrixClient() {
         );
         console.log("got root event ID:", rootEventId);
 
-        //we need to work out wtf the 'record' getStateEvent is returning
+        // TODO: we need to work out wtf the 'record' getStateEvent is returning
+        // the thing stopping me from doing this is that currently there are no event rooms
+        // i need to work on the 'create event' flow so i can test this
+
         // if (!rootEventId || !events.has(rootEventId)) {
 
-        // then get the event from the root event room
+        // TODO: then get the event from the root event room
 
         // dispatch({
         //   type: "SET_MATRIX_EVENT",

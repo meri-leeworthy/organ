@@ -17,7 +17,11 @@
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.merileeworthy.organ",
+      "infoPlist": {
+        "UIBackgroundModes": ["fetch"]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,6 +31,11 @@
     },
     "web": {
       "favicon": "app/assets/images/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f82abde0-1610-4769-8d7f-c9e4a94deeee"
+      }
     }
   }
 }
