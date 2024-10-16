@@ -3,6 +3,9 @@ dist/
 # generated types
 .astro/
 
+# wasm build output
+markdown_to_html/target
+
 # dependencies
 node_modules/
 
