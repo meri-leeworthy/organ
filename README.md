@@ -1,6 +1,6 @@
 # Local WASM SSG
 
-This project aims to provide a simple way to build a static site with WebAssembly. It uses [Astro](https://astro.build) as the SSG and [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) to build the Rust WebAssembly module which processes markdown.
+This project aims to provide a simple way to build a static site with WebAssembly. The frontend is built with [Astro](https://astro.build) and React, with the SSG part (currently just parsing markdown) handled by a WebAssembly module built with Rust and [`wasm-pack`](https://rustwasm.github.io/wasm-pack/).
 
 ## Getting Started
 
