@@ -1,4 +1,8 @@
-# Astro Starter Kit: Minimal
+# Local WASM SSG
+
+This project aims to provide a simple way to build a static site with WebAssembly. It uses [Astro](https://astro.build) as the SSG and [WasmPack](https://rustwasm.github.io/wasm-pack/) to build the Rust WebAssembly module which processes markdown.
+
+## Getting Started
 
 ```sh
 npm create astro@latest -- --template minimal
