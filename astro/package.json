@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "build:rust": "cd ../rust && wasm-pack build --target bundler --out-dir ../astro/pkg",
+    "build:wasm": "cd ../wasm && wasm-pack build --target bundler --out-dir ../astro/src/wasm",
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro check && astro build",
