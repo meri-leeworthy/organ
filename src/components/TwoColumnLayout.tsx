@@ -1,46 +1,76 @@
-// src/components/Component.tsx
-
 import React, { useState, useEffect } from "react"
-import { ChevronRight, ChevronDown, File } from "lucide-react"
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
 import { Textarea } from "@/components/ui/textarea"
+import { FileList } from "./FileList.jsx"
+
+export interface FileData {
+  name: string
+  content: string
+}
 
 const Component: React.FC = () => {
-  interface FileData {
-    name: string
-    content: string
-  }
-
-  const [files, setFiles] = useState<FileData[]>([
-    {
-      name: "main.md",
-      content: "# Welcome to My Document\n\nThis is a sample Markdown file.",
-    },
-    { name: "styles.css", content: "h1 { color: blue; }" },
-    // Add more files as needed
-  ])
+  const [selectedContent, setSelectedContent] = useState<string>("main.md")
   const [selectedFileName, setSelectedFileName] = useState<string>("main.md")
-  const [isOpen, setIsOpen] = useState<boolean>(true)
   const [errorMessage, setErrorMessage] = useState<string>("")
   const [previewContent, setPreviewContent] = useState<string>(
-    "Generated HTML will be rendered here"
+    "Generated HTMLtt will be rendered here"
   )
   const [wasmModule, setWasmModule] = useState<{
-    markdown_to_html: (input: string) => string
+    render: (
+      template: string,
+      markdown: string,
+      css: string,
+      context: string
+    ) => string
   } | null>(null)
+  // the default files
+  const [templates, setTemplates] = useState<FileData[]>([
+    { name: "styles.css", content: "h1 { color: blue; }" },
+    {
+      name: "template.html",
+      content: `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{title}}</title>
+    <style>{{{css}}}</style>
+</head>
+</head>
+<body>
+    <h1>{{heading}}</h1>
+    <p>{{{content}}}</p>
 
-  const selectedFile = files.find(file => file.name === selectedFileName)
+    {{#if show_footer}}
+    <footer>
+        <p>{{footer_text}}</p>
+    </footer>
+    {{/if}}
+</body>
+</html>
+`,
+    },
+  ])
+  const [contentFiles, setContentFiles] = useState<FileData[]>([
+    {
+      name: "main.md",
+      content: `---
+heading: My Document
+---
+# Welcome to My Document
 
+This is a sample Markdown file.`,
+    },
+  ])
+
+  const selectedFile =
+    templates.find(file => file.name === selectedFileName) ||
+    contentFiles.find(file => file.name === selectedFileName)
+
+  // load WASM module
   useEffect(() => {
     const loadWasm = async () => {
       try {
@@ -48,7 +78,7 @@ const Component: React.FC = () => {
         const module = await import(
           "../wasm/markdown_to_html/markdown_to_html.js"
         )
-        setWasmModule(module as { markdown_to_html: (input: string) => string })
+        setWasmModule(module)
         console.log("WASM module loaded:", module)
       } catch (e) {
         console.error("Failed to load WASM module:", e)
@@ -58,7 +88,15 @@ const Component: React.FC = () => {
     loadWasm()
   }, [])
 
-  // Load the WASM module asynchronously when the component mounts
+  // Update the selected content when the selected file changes
+  useEffect(() => {
+    const contentFileNames = contentFiles.map(file => file.name)
+    if (contentFileNames.includes(selectedFileName)) {
+      setSelectedContent(selectedFileName)
+    }
+  }, [selectedFileName])
+
+  // Update the preview content when the templates or content files change
   useEffect(() => {
     if (!wasmModule) {
       console.error("WASM module not loaded yet")
@@ -68,26 +106,30 @@ const Component: React.FC = () => {
       return
     }
 
-    const markdownFile = files.find(file => file.name.endsWith(".md"))
-    const cssFile = files.find(file => file.name.endsWith(".css"))
-    if (!markdownFile) {
-      setErrorMessage("No Markdown file found.")
-      return
-    }
+    const template = templates.find(file => file.name === "template.html")
+
+    const markdownFile = contentFiles.find(
+      file => file.name === selectedContent
+    )
+
+    //maybe there should only ever be one css file - change to its own state?
+    const cssFile = templates.find(file => file.name.endsWith(".css"))
 
     try {
-      console.log("Converting markdown:", markdownFile.content)
-      const htmlContent = wasmModule.markdown_to_html(markdownFile.content)
-      console.log("Conversion result:", htmlContent)
-
+      const markdownContent = markdownFile ? markdownFile.content : ""
+      const templateContent = template ? template.content : ""
       const cssContent = cssFile ? cssFile.content : ""
 
-      const combinedContent = `
-        <style>
-          ${cssContent}
-        </style>
-        ${htmlContent}
-      `
+      console.log("Converting markdown:", markdownContent)
+
+      // Call the WASM module with markdown, CSS, and the class name
+      const combinedContent = wasmModule.render(
+        templateContent,
+        markdownContent,
+        cssContent,
+        ".preview-pane"
+      )
+      console.log("Conversion result:", combinedContent)
 
       setPreviewContent(combinedContent)
       setErrorMessage("")
@@ -96,7 +138,7 @@ const Component: React.FC = () => {
       setPreviewContent("")
       setErrorMessage(String(e))
     }
-  }, [files, wasmModule])
+  }, [templates, contentFiles, wasmModule])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (!selectedFile) return
@@ -104,64 +146,48 @@ const Component: React.FC = () => {
 
     console.log(`Updating content of ${selectedFile.name}`)
 
-    setFiles(prevFiles =>
-      prevFiles.map(file =>
-        file.name === selectedFile.name
-          ? { ...file, content: newContent }
-          : file
+    if (selectedFile.name.endsWith(".md")) {
+      setContentFiles(prevFiles =>
+        prevFiles.map(file =>
+          file.name === selectedFile.name
+            ? { ...file, content: newContent }
+            : file
+        )
       )
-    )
+    } else {
+      setTemplates(prevFiles =>
+        prevFiles.map(file =>
+          file.name === selectedFile.name
+            ? { ...file, content: newContent }
+            : file
+        )
+      )
+    }
   }
-
-  const cssFile = files.find(file => file.name.endsWith(".css"))
-  const cssContent = cssFile ? cssFile.content : ""
-
-  const combinedContent = `
-  <style>
-    ${cssContent}
-  </style>
-  ${previewContent}
-`
 
   return (
     <ResizablePanelGroup direction="horizontal" className="min-h-screen">
       <ResizablePanel defaultSize={50} minSize={30}>
         <div className="flex h-full">
-          <Collapsible
-            open={isOpen}
-            onOpenChange={setIsOpen}
-            className="w-[200px] border-r">
-            <CollapsibleTrigger className="flex w-full items-center justify-between p-4 font-semibold">
-              Files
-              {isOpen ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <ScrollArea className="h-[calc(100vh-56px)]">
-                <ul className="p-4">
-                  {files.map(file => (
-                    <li
-                      key={file.name}
-                      className={`flex cursor-pointer items-center gap-2 rounded p-2 ${
-                        selectedFileName === file.name
-                          ? "bg-accent"
-                          : "hover:bg-accent/50"
-                      }`}
-                      onClick={() => setSelectedFileName(file.name)}>
-                      <File className="h-4 w-4" />
-                      {file.name}
-                    </li>
-                  ))}
-                </ul>
-              </ScrollArea>
-            </CollapsibleContent>
-          </Collapsible>
+          <div className="flex flex-col">
+            <FileList
+              name="Templates"
+              files={templates}
+              selectedFileName={selectedFileName}
+              setSelectedFileName={setSelectedFileName}
+            />
+            <FileList
+              name="Content"
+              files={contentFiles}
+              selectedFileName={selectedFileName}
+              setSelectedFileName={setSelectedFileName}
+            />
+            {/* {"selectedContent " + selectedContent}
+            {"selectedFileName " + selectedFileName} */}
+          </div>
           <div className="flex-1 p-4">
             <Textarea
-              className="h-full min-h-[calc(100vh-32px)] resize-none"
+              className="h-full min-h-[calc(100vh-32px)] resize-none font-mono"
               placeholder="Enter your code here..."
               value={selectedFile ? selectedFile.content : ""}
               onChange={handleInputChange}
@@ -180,7 +206,8 @@ const Component: React.FC = () => {
             width: "100%",
             minHeight: "100px",
           }}
-          dangerouslySetInnerHTML={{ __html: combinedContent }}></div>
+          dangerouslySetInnerHTML={{ __html: previewContent }}></div>
+
         {errorMessage && (
           <p id="error-message" style={{ color: "red" }}>
             {errorMessage}

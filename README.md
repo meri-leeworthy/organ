@@ -1,6 +1,6 @@
 # Local WASM SSG
 
-This project aims to provide a simple way to build a static site with WebAssembly. The frontend is built with [Astro](https://astro.build) and React, with the SSG part (currently just parsing markdown) handled by a WebAssembly module built with Rust and [`wasm-pack`](https://rustwasm.github.io/wasm-pack/).
+This project aims to provide a simple way to build a static site with WebAssembly. The frontend is built with [Astro](https://astro.build) and React, with the 'SSG' part handled by a WebAssembly module built with Rust and [`wasm-pack`](https://rustwasm.github.io/wasm-pack/).
 
 ## Getting Started
 
@@ -28,3 +28,7 @@ cd ..
 mkdir -p src/wasm
 mv markdown_to_html/pkg src/wasm/markdown_to_html
 ```
+
+## Approach
+
+The app should accept markdown files, Handlebars template files, and css files. There needs to be a separation between content and templates.
