@@ -4,7 +4,7 @@ dist/
 .astro/
 
 # wasm build output
-markdown_to_html/target
+rust/target
 
 # dependencies
 node_modules/

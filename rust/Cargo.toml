@@ -1,5 +1,5 @@
 [package]
-name = "markdown_to_html"
+name = "minissg"
 version = "0.1.0"
 edition = "2018"
 
@@ -14,3 +14,8 @@ pulldown-cmark = "0.9"
 regex = "1"
 handlebars = "6.1.0"
 serde_yaml = "0.9.34"
+serde-wasm-bindgen = "0.6.5"
+
+[workspace]
+# Custom build output directory
+target-dir = "../src/wasm/minissg"

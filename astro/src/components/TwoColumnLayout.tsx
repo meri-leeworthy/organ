@@ -3,9 +3,10 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from "@/components/ui/resizable"
-import { Textarea } from "@/components/ui/textarea"
+} from "astro/src/components/ui/resizable.jsx"
+import { Textarea } from "astro/src/components/ui/textarea.jsx"
 import { FileList } from "./FileList.jsx"
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert.jsx"
 
 export interface FileData {
   name: string
@@ -32,25 +33,14 @@ const Component: React.FC = () => {
     { name: "styles.css", content: "h1 { color: blue; }" },
     {
       name: "template.html",
-      content: `
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{{title}}</title>
-    <style>{{{css}}}</style>
-</head>
-</head>
-<body>
-    <h1>{{heading}}</h1>
-    <p>{{{content}}}</p>
+      content: `<h1>{{heading}}</h1>
+{{{content}}}
 
-    {{#if show_footer}}
-    <footer>
-        <p>{{footer_text}}</p>
-    </footer>
-    {{/if}}
-</body>
-</html>
+{{#if show_footer}}
+<footer>
+    <p>{{footer_text}}</p>
+</footer>
+{{/if}}
 `,
     },
   ])
@@ -182,10 +172,8 @@ This is a sample Markdown file.`,
               selectedFileName={selectedFileName}
               setSelectedFileName={setSelectedFileName}
             />
-            {/* {"selectedContent " + selectedContent}
-            {"selectedFileName " + selectedFileName} */}
           </div>
-          <div className="flex-1 p-4">
+          <div className="flex-1 p-4 pl-2">
             <Textarea
               className="h-full min-h-[calc(100vh-32px)] resize-none font-mono"
               placeholder="Enter your code here..."
@@ -197,21 +185,22 @@ This is a sample Markdown file.`,
       </ResizablePanel>
       <ResizableHandle />
       <ResizablePanel defaultSize={50}>
-        <div
-          className="h-full items-center"
-          id="preview-pane"
-          style={{
-            border: "1px solid #ccc",
-            padding: "10px",
-            width: "100%",
-            minHeight: "100px",
-          }}
-          dangerouslySetInnerHTML={{ __html: previewContent }}></div>
-
-        {errorMessage && (
-          <p id="error-message" style={{ color: "red" }}>
-            {errorMessage}
-          </p>
+        {errorMessage ? (
+          <div
+            id="error-message"
+            className="flex items-center justify-center h-full">
+            <div>
+              <Alert variant="destructive">
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{errorMessage}</AlertDescription>
+              </Alert>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="h-full items-center overflow-auto border-l-1 p-2 w-full"
+            id="preview-pane"
+            dangerouslySetInnerHTML={{ __html: previewContent }}></div>
         )}
       </ResizablePanel>
     </ResizablePanelGroup>

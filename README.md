@@ -31,4 +31,7 @@ mv markdown_to_html/pkg src/wasm/markdown_to_html
 
 ## Approach
 
-The app should accept markdown files, Handlebars template files, and css files. There needs to be a separation between content and templates.
+The app should accept markdown files, Handlebars template files, and css files. There needs to be a separation between content and templates. There should be one css file per site.
+
+One tricky thing with the current setup is template dependencies - if a template depends on another template, the dependency needs to be resolved. This could be done by parsing the Handlebars templates and extracting the dependencies - keeping a DAG in state?
+

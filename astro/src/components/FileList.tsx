@@ -22,7 +22,7 @@ export function FileList({
   const [isOpen, setIsOpen] = useState<boolean>(true)
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-[200px]">
-      <CollapsibleTrigger className="flex w-full items-center justify-between p-4 font-semibold">
+      <CollapsibleTrigger className="flex w-full items-center justify-between p-4 pr-2 font-semibold">
         {name}
         {isOpen ? (
           <ChevronDown className="h-4 w-4" />
@@ -31,7 +31,7 @@ export function FileList({
         )}
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <ScrollArea className="">
+        <ScrollArea>
           <ul className="p-4">
             {files.map(file => (
               <li

@@ -1,2 +1,0 @@
-[build]
-target-dir = "../src/wasm/markdown_to_html"

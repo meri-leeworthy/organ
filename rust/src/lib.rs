@@ -2,6 +2,7 @@ use handlebars::Handlebars;
 use pulldown_cmark::{html, Event, Options, Parser, Tag};
 use regex::Regex;
 use serde_json::Value;
+use serde_wasm_bindgen::from_value;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -10,6 +11,7 @@ pub fn render(
     markdown_input: &str,
     css_input: &str,
     class_name: &str,
+    partials: &JsValue, // Assume partials are passed as a JSON object with partial names and content
 ) -> Result<String, JsValue> {
     // Step 1: Split Markdown into frontmatter and content
     let (frontmatter_str, markdown_content) = match split_frontmatter(markdown_input) {
@@ -43,7 +45,7 @@ pub fn render(
     context["class_name"] = Value::String(class_name.trim_start_matches('.').to_string());
 
     // Step 6: Render the template with the context
-    let rendered_template = match render_template(template_content, &context) {
+    let rendered_template = match render_template(template_content, partials, &context) {
         Ok(output) => output,
         Err(e) => return Err(JsValue::from_str(&e)),
     };
@@ -51,8 +53,29 @@ pub fn render(
     Ok(rendered_template)
 }
 
-fn render_template(template_content: &str, context: &Value) -> Result<String, String> {
+fn render_template(
+    template_content: &str,
+    partials: &JsValue,
+    context: &Value,
+) -> Result<String, String> {
     let mut handlebars = Handlebars::new();
+
+    // Deserialize the partials JsValue into a serde_json::Map<String, Value>
+    let partials_map: serde_json::Map<String, Value> = match from_value(partials.clone()) {
+        Ok(Value::Object(map)) => map,
+        Ok(_) => return Err("Partials should be a JSON object".to_string()),
+        Err(e) => return Err(format!("Failed to deserialize partials: {}", e)),
+    };
+
+    for (name, value) in partials_map.iter() {
+        if let Some(template) = value.as_str() {
+            handlebars
+                .register_partial(name, template)
+                .map_err(|e| format!("Failed to register partial {}: {}", name, e))?;
+        } else {
+            return Err(format!("Partial {} is not a string", name));
+        }
+    }
 
     // Register the template from the string
     if let Err(e) = handlebars.register_template_string("template", template_content) {
@@ -93,7 +116,7 @@ fn markdown_to_html(markdown_input: &str) -> Result<String, String> {
         match event {
             Event::Start(tag) | Event::End(tag) => {
                 if let Tag::Image(_, _, _) = tag {
-                    return Err("Error: Images are not allowed.".into());
+                    return Err("Images are not allowed.".into());
                 }
             }
             _ => {}
@@ -112,7 +135,7 @@ fn markdown_to_html(markdown_input: &str) -> Result<String, String> {
 fn split_frontmatter(markdown: &str) -> Result<(String, String), String> {
     let lines: Vec<&str> = markdown.lines().collect();
     if lines.len() < 3 || !lines[0].trim_start().starts_with("---") {
-        return Err("Error: Missing or invalid YAML frontmatter.".into());
+        return Err("Missing or invalid YAML frontmatter.".into());
     }
 
     // Find the closing '---'
@@ -120,7 +143,7 @@ fn split_frontmatter(markdown: &str) -> Result<(String, String), String> {
         .iter()
         .position(|line| line.trim_start().starts_with("---"))
         .map(|idx| idx + 1)
-        .ok_or_else(|| "Error: YAML frontmatter not closed with '---'.".to_string())?;
+        .ok_or_else(|| "YAML frontmatter not closed with '---'.".to_string())?;
 
     let frontmatter = lines[1..closing_index].join("\n");
     let content = lines[closing_index + 1..].join("\n");
@@ -139,7 +162,7 @@ fn deserialize_frontmatter(frontmatter: &str) -> Result<Value, String> {
 
     // Ensure it's a JSON object
     if !json_value.is_object() {
-        return Err("Error: Frontmatter must be a YAML object.".into());
+        return Err("Frontmatter must be a YAML object.".into());
     }
 
     Ok(json_value)
