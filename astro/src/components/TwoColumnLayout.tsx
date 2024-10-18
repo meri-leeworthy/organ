@@ -3,14 +3,23 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from "astro/src/components/ui/resizable.jsx"
-import { Textarea } from "astro/src/components/ui/textarea.jsx"
+} from "@/components/ui/resizable.tsx"
+import { Textarea } from "@/components/ui/textarea.tsx"
 import { FileList } from "./FileList.jsx"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert.jsx"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from "./ui/button"
+import { ScrollArea } from "./ui/scroll-area.jsx"
+import { Plus } from "lucide-react"
 
-export interface FileData {
+export interface FileData<T = string> {
   name: string
-  content: string
+  content: T
 }
 
 const Component: React.FC = () => {
@@ -18,18 +27,19 @@ const Component: React.FC = () => {
   const [selectedFileName, setSelectedFileName] = useState<string>("main.md")
   const [errorMessage, setErrorMessage] = useState<string>("")
   const [previewContent, setPreviewContent] = useState<string>(
-    "Generated HTMLtt will be rendered here"
+    "Generated HTML will be rendered here"
   )
   const [wasmModule, setWasmModule] = useState<{
     render: (
       template: string,
       markdown: string,
       css: string,
-      context: string
+      context: string,
+      partials: Record<string, string>
     ) => string
   } | null>(null)
   // the default files
-  const [templates, setTemplates] = useState<FileData[]>([
+  const [templates, setTemplates] = useState<FileData<string>[]>([
     { name: "styles.css", content: "h1 { color: blue; }" },
     {
       name: "template.html",
@@ -44,7 +54,7 @@ const Component: React.FC = () => {
 `,
     },
   ])
-  const [contentFiles, setContentFiles] = useState<FileData[]>([
+  const [contentFiles, setContentFiles] = useState<FileData<string>[]>([
     {
       name: "main.md",
       content: `---
@@ -55,19 +65,32 @@ heading: My Document
 This is a sample Markdown file.`,
     },
   ])
+  const [assets, setAssets] = useState<FileData<ArrayBuffer>[]>([])
 
   const selectedFile =
     templates.find(file => file.name === selectedFileName) ||
-    contentFiles.find(file => file.name === selectedFileName)
+    contentFiles.find(file => file.name === selectedFileName) ||
+    assets.find(file => file.name === selectedFileName)
+
+  const selectedFileIsText = Boolean(
+    templates.find(file => file.name === selectedFileName) ||
+      contentFiles.find(file => file.name === selectedFileName)
+  )
+
+  const selectedImage =
+    selectedFile &&
+    !selectedFileIsText &&
+    new Blob([selectedFile?.content], { type: "image/jpeg" }) // Change the MIME type to the correct one for your image
+
+  // Create an object URL from the Blob
+  const url = selectedImage ? URL.createObjectURL(selectedImage) : ""
 
   // load WASM module
   useEffect(() => {
     const loadWasm = async () => {
       try {
         console.log("Loading WASM module...")
-        const module = await import(
-          "../wasm/markdown_to_html/markdown_to_html.js"
-        )
+        const module = await import("../wasm/minissg.js")
         setWasmModule(module)
         console.log("WASM module loaded:", module)
       } catch (e) {
@@ -117,7 +140,8 @@ This is a sample Markdown file.`,
         templateContent,
         markdownContent,
         cssContent,
-        ".preview-pane"
+        ".preview-pane",
+        {}
       )
       console.log("Conversion result:", combinedContent)
 
@@ -155,31 +179,156 @@ This is a sample Markdown file.`,
     }
   }
 
+  const handleAddFile = (type: "template" | "content") => {
+    const fileExtension = type === "template" ? "html" : "md"
+
+    // Function to generate unique filename
+    const generateUniqueFileName = (
+      baseName: string,
+      files: any[],
+      extension: string
+    ) => {
+      let fileName = `${baseName}.${extension}`
+      let counter = 1
+
+      // Check if file with this name already exists
+      while (files.some(file => file.name === fileName)) {
+        fileName = `${baseName}${counter}.${extension}`
+        counter++
+      }
+
+      return fileName
+    }
+
+    const newFileName = generateUniqueFileName(
+      "newfile",
+      type === "template" ? templates : contentFiles,
+      fileExtension
+    )
+    const newFile = { name: newFileName, content: "" }
+
+    if (type === "template") {
+      setTemplates([...templates, newFile])
+    } else {
+      setContentFiles([...contentFiles, newFile])
+    }
+
+    setSelectedFileName(newFileName)
+  }
+
+  const handleUploadFile = async (type: "template" | "content" | "asset") => {
+    const input = document.createElement("input")
+    input.type = "file"
+    input.accept =
+      type === "template" ? ".html" : type === "content" ? ".md" : "*"
+    input.onchange = async (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (file) {
+        const content =
+          type === "asset" ? await file.arrayBuffer() : await file.text()
+        const newFile = { name: file.name, content }
+        if (type === "template") {
+          setTemplates([...templates, newFile] as FileData<string>[])
+        } else if (type === "content") {
+          setContentFiles([...contentFiles, newFile] as FileData<string>[])
+        } else {
+          setAssets([...assets, newFile] as FileData<ArrayBuffer>[])
+        }
+        setSelectedFileName(file.name)
+      }
+    }
+    input.click()
+  }
+
   return (
     <ResizablePanelGroup direction="horizontal" className="min-h-screen">
       <ResizablePanel defaultSize={50} minSize={30}>
         <div className="flex h-full">
-          <div className="flex flex-col">
+          <ScrollArea className="h-full flex flex-col">
             <FileList
               name="Templates"
               files={templates}
               selectedFileName={selectedFileName}
               setSelectedFileName={setSelectedFileName}
+              addFileMenu={
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleAddFile("template")}>
+                      New File
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleUploadFile("template")}>
+                      Upload File
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              }
             />
             <FileList
               name="Content"
               files={contentFiles}
               selectedFileName={selectedFileName}
               setSelectedFileName={setSelectedFileName}
+              addFileMenu={
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleAddFile("content")}>
+                      New File
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleUploadFile("content")}>
+                      Upload File
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              }
             />
-          </div>
+            <FileList
+              name="Assets"
+              files={assets}
+              selectedFileName={selectedFileName}
+              setSelectedFileName={setSelectedFileName}
+              addFileMenu={
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleUploadFile("asset")}>
+                      Upload File
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              }
+            />
+          </ScrollArea>
           <div className="flex-1 p-4 pl-2">
-            <Textarea
-              className="h-full min-h-[calc(100vh-32px)] resize-none font-mono"
-              placeholder="Enter your code here..."
-              value={selectedFile ? selectedFile.content : ""}
-              onChange={handleInputChange}
-            />
+            {selectedFileIsText ? (
+              <Textarea
+                className="h-full min-h-[calc(100vh-32px)] resize-none font-mono"
+                placeholder="Enter your code here..."
+                value={
+                  selectedFile && typeof selectedFile.content === "string"
+                    ? selectedFile.content
+                    : ""
+                }
+                onChange={handleInputChange}
+              />
+            ) : (
+              <img src={url} />
+            )}
           </div>
         </div>
       </ResizablePanel>
