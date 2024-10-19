@@ -1,5 +1,7 @@
+use std::collections::HashMap;
+
 use handlebars::Handlebars;
-use pulldown_cmark::{html, Event, Options, Parser, Tag};
+use pulldown_cmark::{html, Options, Parser};
 use regex::Regex;
 use serde_json::Value;
 use serde_wasm_bindgen::from_value;
@@ -11,7 +13,8 @@ pub fn render(
     markdown_input: &str,
     css_input: &str,
     class_name: &str,
-    partials: &JsValue, // Assume partials are passed as a JSON object with partial names and content
+    partials: &JsValue, // Assume partials are passed as a JS object with partial names and content
+    images: &JsValue,   // JS object with image filenames and URLs
 ) -> Result<String, JsValue> {
     // Step 1: Split Markdown into frontmatter and content
     let (frontmatter_str, markdown_content) = match split_frontmatter(markdown_input) {
@@ -26,9 +29,9 @@ pub fn render(
     };
 
     // Step 3: Render Markdown to HTML
-    let html_output = match markdown_to_html(&markdown_content) {
+    let html_output = match markdown_to_html(&markdown_content, images) {
         Ok(output) => output,
-        Err(e) => return Err(JsValue::from_str(&e)),
+        Err(e) => return Err(e),
     };
 
     // Step 4: Insert HTML into context as 'content'
@@ -107,26 +110,24 @@ fn scope_css(css_input: &str, class_name: &str) -> Result<String, String> {
     Ok(result.to_string())
 }
 
-fn markdown_to_html(markdown_input: &str) -> Result<String, String> {
+fn markdown_to_html(markdown_input: &str, images: &JsValue) -> Result<String, JsValue> {
     let options = Options::empty();
 
-    // First pass: Check for disallowed elements (images and HTML)
-    let parser = Parser::new_ext(markdown_input, options);
-    for event in parser {
-        match event {
-            Event::Start(tag) | Event::End(tag) => {
-                if let Tag::Image(_, _, _) = tag {
-                    return Err("Images are not allowed.".into());
-                }
-            }
-            _ => {}
-        }
-    }
+    // Deserialize `images` using `serde-wasm-bindgen`
+    let image_map: HashMap<String, String> = from_value(images.clone())
+        .map_err(|e| JsValue::from_str(&format!("Failed to deserialize images: {}", e)))?;
 
-    // Second pass: Render the Markdown to HTML
+    // Render the Markdown to HTML
     let parser = Parser::new_ext(markdown_input, options);
     let mut html_output = String::new();
     html::push_html(&mut html_output, parser);
+
+    // Replace image `src` attributes with the provided URLs
+    for (name, url) in image_map.iter() {
+        html_output =
+            html_output.replace(&format!("src=\"{}\"", name), &format!("src=\"{}\"", url));
+    }
+
     Ok(html_output)
 }
 
@@ -134,7 +135,7 @@ fn markdown_to_html(markdown_input: &str) -> Result<String, String> {
 /// Assumes frontmatter is enclosed between '---' lines at the beginning.
 fn split_frontmatter(markdown: &str) -> Result<(String, String), String> {
     let lines: Vec<&str> = markdown.lines().collect();
-    if lines.len() < 3 || !lines[0].trim_start().starts_with("---") {
+    if lines.len() < 2 || !lines[0].trim_start().starts_with("---") {
         return Err("Missing or invalid YAML frontmatter.".into());
     }
 

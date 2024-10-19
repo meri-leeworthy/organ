@@ -5,8 +5,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "./ui/collapsible"
-import { ChevronDown, ChevronRight, File, Plus } from "lucide-react"
-import { Button } from "./ui/button"
+import { ChevronDown, ChevronRight, File } from "lucide-react"
 
 export function FileList<T>({
   name,
@@ -27,7 +26,6 @@ export function FileList<T>({
       <div className="flex w-full items-center justify-between p-4 pr-2 font-semibold">
         <CollapsibleTrigger>{name}</CollapsibleTrigger>
         <div className="flex items-center space-x-2">
-          {addFileMenu}
           <CollapsibleTrigger>
             {isOpen ? (
               <ChevronDown className="h-4 w-4" />
@@ -35,6 +33,7 @@ export function FileList<T>({
               <ChevronRight className="h-4 w-4" />
             )}
           </CollapsibleTrigger>
+          {addFileMenu}
         </div>
       </div>
 
@@ -50,7 +49,9 @@ export function FileList<T>({
               }`}
               onClick={() => setSelectedFileName(file.name)}>
               <File className="h-4 w-4" />
-              {file.name}
+              {file.name.length > 12
+                ? file.name.slice(0, 12) + "..."
+                : file.name}
             </li>
           ))}
         </ul>

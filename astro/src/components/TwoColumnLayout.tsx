@@ -35,15 +35,28 @@ const Component: React.FC = () => {
       markdown: string,
       css: string,
       context: string,
-      partials: Record<string, string>
+      partials: Record<string, string>,
+      images: Record<string, string>
     ) => string
   } | null>(null)
   // the default files
   const [templates, setTemplates] = useState<FileData<string>[]>([
-    { name: "styles.css", content: "h1 { color: blue; }" },
+    {
+      name: "styles.css",
+      content: `h1 { 
+font-size: 2rem;
+font-weight: bold; 
+}
+
+h2 {
+font-size: 1.5rem;
+font-weight: bold;
+}`,
+    },
     {
       name: "template.html",
-      content: `<h1>{{heading}}</h1>
+      content: `<style>{{{css}}}</style>
+<div class="preview-pane"><h1>{{heading}}</h1>
 {{{content}}}
 
 {{#if show_footer}}
@@ -51,6 +64,7 @@ const Component: React.FC = () => {
     <p>{{footer_text}}</p>
 </footer>
 {{/if}}
+</div>
 `,
     },
   ])
@@ -60,12 +74,13 @@ const Component: React.FC = () => {
       content: `---
 heading: My Document
 ---
-# Welcome to My Document
+## Welcome to My Document
 
 This is a sample Markdown file.`,
     },
   ])
   const [assets, setAssets] = useState<FileData<ArrayBuffer>[]>([])
+  const [imageURLs, setImageURLs] = useState<Record<string, string>>({})
 
   const selectedFile =
     templates.find(file => file.name === selectedFileName) ||
@@ -90,7 +105,7 @@ This is a sample Markdown file.`,
     const loadWasm = async () => {
       try {
         console.log("Loading WASM module...")
-        const module = await import("../wasm/minissg.js")
+        const module = await import("../wasm/minissg/minissg.js")
         setWasmModule(module)
         console.log("WASM module loaded:", module)
       } catch (e) {
@@ -120,12 +135,9 @@ This is a sample Markdown file.`,
     }
 
     const template = templates.find(file => file.name === "template.html")
-
     const markdownFile = contentFiles.find(
       file => file.name === selectedContent
     )
-
-    //maybe there should only ever be one css file - change to its own state?
     const cssFile = templates.find(file => file.name.endsWith(".css"))
 
     try {
@@ -135,16 +147,17 @@ This is a sample Markdown file.`,
 
       console.log("Converting markdown:", markdownContent)
 
-      // Call the WASM module with markdown, CSS, and the class name
+      // Pass imageURLs as a JSON string or appropriate format
       const combinedContent = wasmModule.render(
         templateContent,
         markdownContent,
         cssContent,
         ".preview-pane",
-        {}
+        {}, // existing partials
+        imageURLs // new parameter for image mapping
       )
-      console.log("Conversion result:", combinedContent)
 
+      console.log("Conversion result:", combinedContent)
       setPreviewContent(combinedContent)
       setErrorMessage("")
     } catch (e) {
@@ -152,7 +165,35 @@ This is a sample Markdown file.`,
       setPreviewContent("")
       setErrorMessage(String(e))
     }
-  }, [templates, contentFiles, wasmModule])
+  }, [
+    selectedFileName,
+    selectedContent,
+    templates,
+    contentFiles,
+    wasmModule,
+    imageURLs,
+  ])
+
+  // Create object URLs for image assets
+  useEffect(() => {
+    const urls: Record<string, string> = {}
+
+    assets.forEach(asset => {
+      // Adjust the MIME type based on your requirements
+      if (asset.name.match(/\.(jpg|jpeg|png|gif|svg)$/i)) {
+        urls[asset.name] = URL.createObjectURL(
+          new Blob([asset.content], { type: "image/*" })
+        )
+      }
+    })
+
+    setImageURLs(urls)
+
+    // Cleanup: Revoke object URLs when assets change or component unmounts
+    return () => {
+      Object.values(urls).forEach(url => URL.revokeObjectURL(url))
+    }
+  }, [assets])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (!selectedFile) return
@@ -238,6 +279,50 @@ This is a sample Markdown file.`,
       }
     }
     input.click()
+  }
+
+  const handleRemoveAsset = (fileName: string) => {
+    setAssets(prevAssets => prevAssets.filter(file => file.name !== fileName))
+    setImageURLs(prevURLs => {
+      const { [fileName]: _, ...rest } = prevURLs
+      URL.revokeObjectURL(_)
+      return rest
+    })
+  }
+
+  const handleLinkClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    console.log("Link clicked:", event.target)
+    let target = event.target as HTMLElement | null
+
+    while (target && target !== event.currentTarget) {
+      console.log("Target:", target)
+      if (target.tagName.toLowerCase() === "a") {
+        const href = (target as HTMLAnchorElement).getAttribute("href")
+        console.log("Link href:", href)
+        if (href) {
+          const isInternal = href.startsWith("/")
+
+          if (isInternal) {
+            if (onLinkClick) {
+              onLinkClick(href)
+            }
+          } else {
+            // Optionally handle external links, e.g., open in new tab
+            // event.preventDefault();
+            // window.open(href, '_blank');
+          }
+        }
+        break
+      }
+      target = target.parentElement
+    }
+  }
+
+  const onLinkClick = (href: string) => {
+    console.log("Link clicked:", href)
+    setSelectedFileName(href.slice(1))
+    setSelectedContent(href.slice(1))
   }
 
   return (
@@ -349,6 +434,7 @@ This is a sample Markdown file.`,
           <div
             className="h-full items-center overflow-auto border-l-1 p-2 w-full"
             id="preview-pane"
+            onClick={handleLinkClick}
             dangerouslySetInnerHTML={{ __html: previewContent }}></div>
         )}
       </ResizablePanel>
