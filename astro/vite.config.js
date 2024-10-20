@@ -1,7 +1,8 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from "vite"
 
 export default defineConfig({
   build: {
-    target: 'esnext',
+    target: "esnext",
+    assetsInlineLimit: 0, // ensure WASM file isn't inlined
   },
-});
+})
