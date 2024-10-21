@@ -58,7 +58,7 @@ export const Preview = ({
     const fetchData = async () => {
       try {
         const query = "SELECT * FROM files;"
-        const result = await execute(query)
+        const result = execute(query)
         const files = result.map((file: ParamsObject) => ({
           name: file.name?.toString() || "",
           content: file.content?.toString() || "",
@@ -91,7 +91,7 @@ export const Preview = ({
 
   const [imageURLs, setImageURLs] = useState<Record<string, string>>({})
 
-  console.log("refresh:", refresh)
+  // console.log("refresh:", refresh)
 
   // Create object URLs for image assets
   // useEffect(() => {
@@ -116,7 +116,7 @@ export const Preview = ({
 
   // Update the preview content when the templates or content files change
   useEffect(() => {
-    console.log("Updating preview content...")
+    // console.log("Updating preview content...")
     // setRefresh(false)
     if (!wasmModule) {
       console.error("WASM module not loaded yet")
@@ -147,7 +147,7 @@ export const Preview = ({
         imageURLs // new parameter for image mapping
       )
 
-      console.log("Conversion result:", combinedContent)
+      // console.log("Conversion result:", combinedContent)
       setPreviewContent(combinedContent)
       setErrorMessage("")
     } catch (e) {
@@ -159,7 +159,6 @@ export const Preview = ({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      console.log("Key pressed:", event.key)
       setRefresh(refresh => refresh + 1) // Trigger rerender by updating state
     }
 
@@ -173,7 +172,6 @@ export const Preview = ({
 
   const handleLinkClick = (event: React.MouseEvent<HTMLDivElement>) => {
     event.preventDefault()
-    console.log("Link clicked:", event.target)
     let target = event.target as HTMLElement | null
 
     while (target && target !== event.currentTarget) {
@@ -201,7 +199,6 @@ export const Preview = ({
   }
 
   const onLinkClick = (href: string) => {
-    console.log("Link clicked:", href)
     setSelectedFile({
       activeFile: href.slice(1),
       type: "md",

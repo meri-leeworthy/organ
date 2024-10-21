@@ -11,16 +11,13 @@ export const SelectedFileDisplay = ({
   const { execute, loading, error, schemaInitialized } = useSqlContext()
   const [content, setContent] = useState<string>("")
 
-  console.log("Rendering, Selected file:", selectedFile)
-
   useEffect(() => {
-    console.log("useEffect firing")
     if (!schemaInitialized || loading || error || !selectedFile) return
 
     const getSelectedFile = async (selectedFileName: string) => {
       try {
         const query = `SELECT * FROM files WHERE name = ?;`
-        const result = await execute(query, [selectedFileName])
+        const result = execute(query, [selectedFileName])
         setContent(result[0]?.content?.toString() || "")
       } catch (err) {
         console.error("Error fetching file from database:", err)
@@ -52,12 +49,7 @@ export const SelectedFileDisplay = ({
     AND type = ?;
     `
     try {
-      const result = await execute(query, [
-        newContent,
-        selectedFile.activeFile,
-        selectedFile.type,
-      ])
-      console.log("Updated content:", result)
+      execute(query, [newContent, selectedFile.activeFile, selectedFile.type])
     } catch (err) {
       console.error("Error updating content:", err)
     }
@@ -66,7 +58,7 @@ export const SelectedFileDisplay = ({
   return (
     <div className="flex-1 p-4 pl-2">
       {selectedFile?.type === "asset" ? (
-        <img src={"url"} alt="Selected Asset" />
+        <img src={content} alt="Selected Asset" />
       ) : (
         <Textarea
           className="h-20 min-h-[calc(100vh-32px)] resize-none font-mono"

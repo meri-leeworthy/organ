@@ -40,7 +40,7 @@ export function FileList<T>({
             : type === "content"
               ? "SELECT * FROM files WHERE type = 'md';"
               : "SELECT * FROM files WHERE type = 'asset';"
-        const result = await execute(query)
+        const result = execute(query)
         const files = result.map((file: ParamsObject) => ({
           name: file.name?.toString() || "",
           content: file.content?.toString() || "",
@@ -54,7 +54,7 @@ export function FileList<T>({
     }
 
     fetchData()
-  }, [execute, loading, error, schemaInitialized])
+  }, [execute, loading, error, schemaInitialized, selectedFile])
 
   if (loading || !schemaInitialized) return <div>Loading...</div>
   if (error) return <div>Error: {error.message}</div>
@@ -83,13 +83,6 @@ export function FileList<T>({
 
     const newFileName = generateUniqueFileName("newfile", files, fileExtension)
 
-    console.log(
-      "Running INSERT INTO files query with new file: ",
-      newFileName,
-      " of type: ",
-      fileExtension
-    )
-
     execute(
       "INSERT OR IGNORE INTO files (name, type, content) VALUES (?, ?, ?);",
       [newFileName, fileExtension, ""]
@@ -100,29 +93,69 @@ export function FileList<T>({
     ])
   }
 
-  // const handleUploadFile = async (type: "template" | "content" | "asset") => {
-  //   const input = document.createElement("input")
-  //   input.type = "file"
-  //   input.accept =
-  //     type === "template" ? ".html" : type === "content" ? ".md" : "*"
-  //   input.onchange = async (e: Event) => {
-  //     const file = (e.target as HTMLInputElement).files?.[0]
-  //     if (file) {
-  //       const content =
-  //         type === "asset" ? await file.arrayBuffer() : await file.text()
-  //       const newFile = { name: file.name, content }
-  //       if (type === "template") {
-  //         setTemplates([...templates, newFile] as FileData<string>[])
-  //       } else if (type === "content") {
-  //         setContentFiles([...contentFiles, newFile] as FileData<string>[])
-  //       } else {
-  //         setAssets([...assets, newFile] as FileData<ArrayBuffer>[])
-  //       }
-  //       setSelectedFileName(file.name)
+  // Create object URLs for image assets
+  // useEffect(() => {
+  //   const urls: Record<string, string> = {}
+
+  //   assets.forEach(asset => {
+  //     // Adjust the MIME type based on your requirements
+  //     if (asset.name.match(/\.(jpg|jpeg|png|gif|svg)$/i)) {
+  //       urls[asset.name] = URL.createObjectURL(
+  //         new Blob([asset.content], { type: "image/*" })
+  //       )
   //     }
+  //   })
+
+  //   setImageURLs(urls)
+
+  //   // Cleanup: Revoke object URLs when assets change or component unmounts
+  //   return () => {
+  //     Object.values(urls).forEach(url => URL.revokeObjectURL(url))
   //   }
-  //   input.click()
-  // }
+  // }, [assets])
+
+  const handleUploadFile = async (type: "template" | "content" | "asset") => {
+    if (!schemaInitialized || loading || error) return
+    const input = document.createElement("input")
+    input.type = "file"
+    input.accept =
+      type === "template" ? ".html,.htm,.hbs" : type === "content" ? ".md" : "*"
+    const normalizedType =
+      type === "template" ? "hbs" : type === "asset" ? "asset" : "md"
+    input.onchange = async (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (file) {
+        const content =
+          type === "asset" ? await file.arrayBuffer() : await file.text()
+        const newFile = { name: file.name, content }
+
+        if (type === "asset" && file.name.match(/\.(jpg|jpeg|png|gif|svg)$/i)) {
+          const url = URL.createObjectURL(
+            new Blob([content], { type: "image/*" })
+          )
+
+          execute(
+            "INSERT OR IGNORE INTO files (name, type, content) VALUES (?, ?, ?);",
+            [file.name, normalizedType, url]
+          )
+        } else {
+          execute(
+            "INSERT OR IGNORE INTO files (name, type, content) VALUES (?, ?, ?);",
+            [file.name, normalizedType, content as string]
+          )
+        }
+
+        setFiles([...files, newFile] as FileData<string>[])
+        setSelectedFile({
+          activeFile: file.name,
+          type: normalizedType,
+          contentFile:
+            type === "content" ? file.name : selectedFile.contentFile,
+        })
+      }
+    }
+    input.click()
+  }
 
   // const handleRemoveAsset = (fileName: string) => {
   //   setAssets(prevAssets => prevAssets.filter(file => file.name !== fileName))
@@ -162,7 +195,7 @@ export function FileList<T>({
               <DropdownMenuItem onClick={() => handleAddFile(type)}>
                 New File
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => 'handleUploadFile("template")'}>
+              <DropdownMenuItem onClick={() => handleUploadFile(type)}>
                 Upload File
               </DropdownMenuItem>
             </DropdownMenuContent>

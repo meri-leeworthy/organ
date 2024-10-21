@@ -16,28 +16,27 @@ export const TwoColumnLayout: React.FC = () => {
     type: "md",
     contentFile: "main.md",
   })
+  const [isVertical, setIsVertical] = useState(false)
 
-  // const [isVertical, setIsVertical] = useState(false)
+  useEffect(() => {
+    const handleResize = () => {
+      // Adjust the threshold width to your preference
+      setIsVertical(window.innerWidth <= 768)
+    }
 
-  // useEffect(() => {
-  //   const handleResize = () => {
-  //     // Adjust the threshold width to your preference
-  //     setIsVertical(window.innerWidth <= 768)
-  //   }
+    // Set the initial layout direction
+    handleResize()
 
-  //   // Set the initial layout direction
-  //   handleResize()
-
-  //   window.addEventListener("resize", handleResize)
-  //   return () => {
-  //     window.removeEventListener("resize", handleResize)
-  //   }
-  // }, [])
-
-  // isVertical ? "vertical" : "horizontal"
+    window.addEventListener("resize", handleResize)
+    return () => {
+      window.removeEventListener("resize", handleResize)
+    }
+  }, [])
 
   return (
-    <ResizablePanelGroup direction="horizontal" className="min-h-screen">
+    <ResizablePanelGroup
+      direction={isVertical ? "vertical" : "horizontal"}
+      className="min-h-screen">
       <ResizablePanel defaultSize={50} minSize={30}>
         <div className="flex h-full">
           <ScrollArea className="h-full flex flex-col">
@@ -58,10 +57,7 @@ export const TwoColumnLayout: React.FC = () => {
             />
           </ScrollArea>
           <div className="flex-1 p-4 pl-2">
-            <SelectedFileDisplay
-              selectedFile={selectedFile}
-              // setSelectedFile={setSelectedFile}
-            />
+            <SelectedFileDisplay selectedFile={selectedFile} />
           </div>
         </div>
       </ResizablePanel>
