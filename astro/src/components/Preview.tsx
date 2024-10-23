@@ -89,7 +89,7 @@ export const Preview = ({
   //   }
   // }, [selectedFileName])
 
-  const [imageURLs, setImageURLs] = useState<Record<string, string>>({})
+  // const [imageURLs, setImageURLs] = useState<Record<string, string>>({})
 
   // console.log("refresh:", refresh)
 
@@ -127,23 +127,38 @@ export const Preview = ({
     }
 
     const template = files.find(file => file.name === "template.hbs")
+    const partialFiles = files.filter(
+      file => file.name.endsWith(".hbs") && file.name !== "template.hbs"
+    )
     const markdownFile = files.find(
       file => file.name === selectedFile.contentFile
     )
     const cssFile = files.find(file => file.name.endsWith(".css"))
+    const assets = files.filter(file => file.type === "asset")
+    const imageURLs: Record<string, string> = {}
+    for (const asset of assets) {
+      // Adjust the MIME type based on your requirements
+      if (asset.name.match(/\.(jpg|jpeg|png|gif|svg)$/i)) {
+        imageURLs[asset.name] = asset.content
+      }
+    }
+
+    const markdownContent = markdownFile ? markdownFile.content : ""
+    const templateContent = template ? template.content : ""
+    const cssContent = cssFile ? cssFile.content : ""
+    const partials: Record<string, string> = {}
+    for (const partial of partialFiles) {
+      partials[partial.name] = partial.content
+    }
 
     try {
-      const markdownContent = markdownFile ? markdownFile.content : ""
-      const templateContent = template ? template.content : ""
-      const cssContent = cssFile ? cssFile.content : ""
-
       // Pass imageURLs as a JSON string or appropriate format
       const combinedContent = wasmModule.render(
         templateContent,
         markdownContent,
         cssContent,
         ".preview-pane",
-        {}, // existing partials
+        partials, // existing partials
         imageURLs // new parameter for image mapping
       )
 
@@ -155,7 +170,7 @@ export const Preview = ({
       setPreviewContent("")
       setErrorMessage(String(e))
     }
-  }, [selectedFile, wasmModule, imageURLs, files, loading, debouncedRefresh]) //,
+  }, [selectedFile, wasmModule, files, loading, debouncedRefresh]) //,
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -222,7 +237,7 @@ export const Preview = ({
         </div>
       ) : (
         <div
-          className="h-full items-center overflow-auto border-l-1 p-2 w-full"
+          className="h-full items-center overflow-y-scroll border-l-1 p-2 w-full"
           id="preview-pane"
           onClick={handleLinkClick}
           dangerouslySetInnerHTML={{ __html: previewContent }}></div>

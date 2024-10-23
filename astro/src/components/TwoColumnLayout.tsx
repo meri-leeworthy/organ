@@ -9,6 +9,8 @@ import { ScrollArea } from "./ui/scroll-area.js"
 import { SelectedFileDisplay } from "./SelectedFileDisplay.jsx"
 import { Preview } from "./Preview.jsx"
 import type { SelectedFile } from "../lib/types.jsx"
+import { Button } from "./ui/button.jsx"
+import { useSqlContext } from "./SqlContext.jsx"
 
 export const TwoColumnLayout: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<SelectedFile>({
@@ -36,7 +38,7 @@ export const TwoColumnLayout: React.FC = () => {
   return (
     <ResizablePanelGroup
       direction={isVertical ? "vertical" : "horizontal"}
-      className="min-h-screen">
+      className="min-h-screen max-h-screen">
       <ResizablePanel defaultSize={50} minSize={30}>
         <div className="flex h-full">
           <ScrollArea className="h-full flex flex-col">

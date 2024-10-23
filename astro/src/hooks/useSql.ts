@@ -1,7 +1,7 @@
 // hooks/useSql.ts
 import { useEffect, useState, useCallback, useRef } from "react"
 import type { BindParams, Database, ParamsObject } from "sql.js"
-import { isBrowser } from "../lib/idbHelper"
+import { isBrowser, loadFromIndexedDB, saveToIndexedDB } from "../lib/idbHelper"
 import { useDebounce } from "./useDebounce"
 
 export type Execute = (query: string, params?: BindParams) => ParamsObject[]
@@ -11,27 +11,38 @@ export interface UseSqlResult {
   loading: boolean
   error: Error | null
   db: Database | null
+  // save: () => Promise<void>
 }
 
 const useSql = (): UseSqlResult => {
   const [db, setDb] = useState<Database | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<Error | null>(null)
+  const [saving, setSaving] = useState<number>(0)
+  const debouncedSaving = useDebounce(saving, 2000)
 
   // Reference to track if the component is mounted
   const isMountedRef = useRef(true)
 
   // Debounced save function for saving to IndexedDB
-  // const debouncedSaveToIndexedDB = useDebounce(async (data: Uint8Array) => {
-  //   if (isBrowser()) {
-  //     try {
-  //       await saveToIndexedDB(data)
-  //       console.log("Database saved to IndexedDB.")
-  //     } catch (saveError) {
-  //       console.error("Failed to save database to IndexedDB:", saveError)
-  //     }
-  //   }
-  // }, 1000)
+  useEffect(() => {
+    async function save() {
+      if (!db) {
+        throw new Error("Database is not initialized")
+      }
+
+      if (isBrowser()) {
+        try {
+          const data = db.export()
+          await saveToIndexedDB(data)
+          console.log("Database saved to IndexedDB.")
+        } catch (saveError) {
+          console.error("Failed to save database to IndexedDB:", saveError)
+        }
+      }
+    }
+    save()
+  }, [debouncedSaving])
 
   useEffect(() => {
     // Cleanup function to update the mounted reference
@@ -54,6 +65,7 @@ const useSql = (): UseSqlResult => {
     }
 
     const initializeSql = async () => {
+      console.log("Initializing SQL.js...")
       try {
         const initSqlJs = await import("sql.js")
         const SQL = await initSqlJs.default({
@@ -61,9 +73,10 @@ const useSql = (): UseSqlResult => {
         })
 
         // Load database from IndexedDB if available
-        // const data = await loadFromIndexedDB()
-        const database = new SQL.Database() // data ? new SQL.Database(data) : new SQL.Database()
+        const data = await loadFromIndexedDB()
+        const database = data ? new SQL.Database(data) : new SQL.Database()
 
+        console.log("SQL.js initialized.")
         if (isMountedRef.current) {
           setDb(database)
           setLoading(false)
@@ -98,16 +111,17 @@ const useSql = (): UseSqlResult => {
         }
         stmt.free()
 
-        // Schedule saving to IndexedDB after executing the query
-        // const data = db.export()
-        // debouncedSaveToIndexedDB(data)
+        // only setSaving if the query is not a SELECT statement
+        if (!query.trim().toUpperCase().startsWith("SELECT")) {
+          setSaving(saving => saving + 1)
+        }
 
         return rows
       } catch (err) {
         throw err
       }
     },
-    [db] //, debouncedSaveToIndexedDB
+    [db]
   )
 
   return { execute, loading, error, db }

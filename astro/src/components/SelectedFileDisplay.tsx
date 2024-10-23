@@ -56,12 +56,12 @@ export const SelectedFileDisplay = ({
   }
 
   return (
-    <div className="flex-1 p-4 pl-2">
+    <div className="flex-1 p-2">
       {selectedFile?.type === "asset" ? (
         <img src={content} alt="Selected Asset" />
       ) : (
         <Textarea
-          className="h-20 min-h-[calc(100vh-32px)] resize-none font-mono"
+          className="h-20 min-h-[calc(100vh-40px)] resize-none font-mono"
           placeholder="Enter your code here..."
           value={content}
           onChange={handleInputChange}

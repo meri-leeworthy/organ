@@ -8,12 +8,15 @@ export const openDatabase = () => {
   }
 
   return new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open("sqljs-db", 2) // Ensure this version is higher if needed for schema changes
+    const request = indexedDB.open("sqljs-db", 3) // Ensure this version is higher if needed for schema changes
 
     request.onupgradeneeded = event => {
       const db = request.result
       if (!db.objectStoreNames.contains("sqlfile")) {
         db.createObjectStore("sqlfile") // Create the 'sqlfile' object store
+      }
+      if (!db.objectStoreNames.contains("assets")) {
+        db.createObjectStore("assets") // Create the 'assets' object store
       }
     }
 
