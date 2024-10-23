@@ -15,7 +15,13 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu"
 import { Button } from "./ui/button"
-import { saveAssetToIndexedDB } from "@/lib/idbHelper"
+import { deleteAssetFromIndexedDB, saveAssetToIndexedDB } from "@/lib/idbHelper"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuTrigger,
+} from "./ui/context-menu"
+import { ContextMenuItem } from "@radix-ui/react-context-menu"
 
 export function FileList<T>({
   type,
@@ -28,6 +34,7 @@ export function FileList<T>({
 }) {
   const [isOpen, setIsOpen] = useState<boolean>(true)
   const [files, setFiles] = useState<FileData[]>([])
+  const [contextMenuFile, setContextMenuFile] = useState<string>("")
 
   const { execute, loading, error, schemaInitialized } = useSqlContext()
 
@@ -172,6 +179,59 @@ export function FileList<T>({
   //   })
   // }
 
+  const handleContextMenu = (e: React.MouseEvent<HTMLLIElement>) => {
+    // e.preventDefault() // Prevent the default right-click menu
+    const fileName = e.currentTarget.textContent || ""
+    setContextMenuFile(fileName) // Store the clicked file's name
+    // Logic to show the custom context menu
+  }
+
+  const handleRenameFile = (oldName: string, newName: string) => {
+    if (!schemaInitialized || loading || error) return
+    execute("UPDATE files SET name = ? WHERE name = ?;", [newName, oldName])
+    setFiles(files =>
+      files.map(file =>
+        file.name === oldName ? { ...file, name: newName } : file
+      )
+    )
+    if (selectedFile.activeFile === oldName) {
+      setSelectedFile(selectedFile => ({
+        activeFile: newName,
+        type: selectedFile.type,
+        contentFile: selectedFile.contentFile,
+      }))
+    }
+  }
+
+  const handleRenameFileClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const newName = prompt("Enter new name:", contextMenuFile as string)
+    if (newName) {
+      handleRenameFile(contextMenuFile as string, newName)
+    }
+  }
+
+  const handleDeleteFile = (fileName: string) => {
+    if (!schemaInitialized || loading || error) return
+    execute("DELETE FROM files WHERE name = ?;", [fileName])
+    setFiles(files => files.filter(file => file.name !== fileName))
+    if (selectedFile.activeFile === fileName) {
+      setSelectedFile(selectedFile => ({
+        activeFile: "",
+        type: selectedFile.type,
+        contentFile: selectedFile.contentFile,
+      }))
+    }
+    if (type === "asset") {
+      deleteAssetFromIndexedDB(fileName)
+    }
+  }
+
+  const handleDeleteFileClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (confirm(`Are you sure you want to delete ${contextMenuFile}?`)) {
+      handleDeleteFile(contextMenuFile as string)
+    }
+  }
+
   const heading =
     type === "template"
       ? "Templates"
@@ -198,9 +258,11 @@ export function FileList<T>({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => handleAddFile(type)}>
-                New File
-              </DropdownMenuItem>
+              {type === "asset" ? null : (
+                <DropdownMenuItem onClick={() => handleAddFile(type)}>
+                  New File
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => handleUploadFile(type)}>
                 Upload File
               </DropdownMenuItem>
@@ -212,26 +274,45 @@ export function FileList<T>({
       <CollapsibleContent>
         <ul className="p-4">
           {files.map(file => (
-            <li
-              key={file.name}
-              className={`flex cursor-pointer items-center gap-2 rounded p-2 ${
-                selectedFile.activeFile === file.name
-                  ? "bg-accent"
-                  : "hover:bg-accent/50"
-              }`}
-              onClick={() =>
-                setSelectedFile(selectedFile => ({
-                  activeFile: file.name,
-                  type: file.type,
-                  contentFile:
-                    file.type === "md" ? file.name : selectedFile.contentFile,
-                }))
-              }>
-              <File className="h-4 w-4" />
-              {file.name.length > 12
-                ? file.name.slice(0, 12) + "..."
-                : file.name}
-            </li>
+            <ContextMenu key={file.name}>
+              <ContextMenuTrigger>
+                <li
+                  onContextMenu={handleContextMenu}
+                  className={`flex cursor-pointer items-center gap-2 rounded p-2 ${
+                    selectedFile.activeFile === file.name
+                      ? "bg-accent"
+                      : "hover:bg-accent/50"
+                  }`}
+                  onClick={() =>
+                    setSelectedFile(selectedFile => ({
+                      activeFile: file.name,
+                      type: file.type,
+                      contentFile:
+                        file.type === "md"
+                          ? file.name
+                          : selectedFile.contentFile,
+                    }))
+                  }>
+                  <File className="h-4 w-4" />
+                  {/* {file.name.length > 12
+                    ? file.name.slice(0, 12) + "..."
+                    : file.name} */}
+                  {file.name}
+                </li>
+              </ContextMenuTrigger>
+              <ContextMenuContent>
+                <ContextMenuItem
+                  className="flex text-sm cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-accent hover:outline-none"
+                  onClick={handleRenameFileClick}>
+                  Rename
+                </ContextMenuItem>
+                <ContextMenuItem
+                  className="flex text-sm cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-accent hover:outline-none"
+                  onClick={handleDeleteFileClick}>
+                  Delete
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
           ))}
         </ul>
       </CollapsibleContent>
