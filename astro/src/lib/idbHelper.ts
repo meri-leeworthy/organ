@@ -51,6 +51,29 @@ export const saveToIndexedDB = async (data: Uint8Array) => {
   }
 }
 
+export const saveAssetToIndexedDB = async (fileName: string, data: Blob) => {
+  try {
+    const db = await openDatabase()
+    const transaction = db.transaction("assets", "readwrite")
+    const store = transaction.objectStore("assets")
+    store.put(data, fileName)
+
+    console.log("Saved asset to IndexedDB:", fileName)
+
+    return new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => {
+        resolve()
+      }
+      transaction.onerror = () => {
+        reject(transaction.error)
+      }
+    })
+  } catch (error) {
+    console.error("IndexedDB error:", error)
+    throw error
+  }
+}
+
 export const loadFromIndexedDB = async () => {
   if (typeof indexedDB === "undefined") {
     throw new Error("IndexedDB is not available in this environment.")

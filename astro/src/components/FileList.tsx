@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu"
 import { Button } from "./ui/button"
-import { openDatabase } from "@/lib/idbHelper"
+import { saveAssetToIndexedDB } from "@/lib/idbHelper"
 
 export function FileList<T>({
   type,
@@ -114,29 +114,6 @@ export function FileList<T>({
   //     Object.values(urls).forEach(url => URL.revokeObjectURL(url))
   //   }
   // }, [assets])
-
-  const saveAssetToIndexedDB = async (fileName: string, data: Blob) => {
-    try {
-      const db = await openDatabase()
-      const transaction = db.transaction("assets", "readwrite")
-      const store = transaction.objectStore("assets")
-      store.put(data, fileName)
-
-      console.log("Saved asset to IndexedDB:", fileName)
-
-      return new Promise<void>((resolve, reject) => {
-        transaction.oncomplete = () => {
-          resolve()
-        }
-        transaction.onerror = () => {
-          reject(transaction.error)
-        }
-      })
-    } catch (error) {
-      console.error("IndexedDB error:", error)
-      throw error
-    }
-  }
 
   const handleUploadFile = async (type: "template" | "content" | "asset") => {
     if (!schemaInitialized || loading || error) return
