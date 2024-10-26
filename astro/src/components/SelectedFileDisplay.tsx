@@ -3,6 +3,15 @@ import { useSqlContext } from "./SqlContext"
 import type { SelectedFile } from "../lib/types"
 import { Textarea } from "./ui/textarea"
 import { loadAssetFromIndexedDB } from "@/lib/idbHelper"
+import { Input } from "./ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select"
+import { SidebarTrigger } from "./ui/sidebar"
 
 async function isBlobUrlValid(blobUrl: string): Promise<boolean> {
   try {
@@ -84,16 +93,33 @@ export const SelectedFileDisplay = ({
   }
 
   return (
-    <div className="flex-1 p-2">
+    <div className="flex-1 p-2 h-full flex flex-col">
       {selectedFile?.type === "asset" ? (
         <img src={content} alt="Selected Asset" />
       ) : (
-        <Textarea
-          className="h-20 min-h-[calc(100vh-40px)] resize-none font-mono"
-          placeholder="Enter your code here..."
-          value={content}
-          onChange={handleInputChange}
-        />
+        <>
+          <div>
+            <SidebarTrigger />
+          </div>
+          <div className="py-2 pb-4">
+            <Select>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Template" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="light">Light</SelectItem>
+                <SelectItem value="dark">Dark</SelectItem>
+                <SelectItem value="system">System</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Textarea
+            className="h-20 flex-grow resize-none font-mono"
+            placeholder="Enter your code here..."
+            value={content}
+            onChange={handleInputChange}
+          />
+        </>
       )}
     </div>
   )

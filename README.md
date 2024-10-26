@@ -47,4 +47,32 @@ the files are stored in SQLite.
 
 todo
 
-- instead of file extensions in file name, use type column in db
+- don't store file extensions in file name, use type column in db
+
+Templating todos:
+- yaml isn't directly accessible, only through UI
+- UI for editing and creating custom models
+- every model has a relevant template
+- models would be editable in 'project settings'
+- pages (cannot be removed)
+  - template*
+  - title
+  - the thing about a page model is that the corresponding template has to represent a full html file. that template can then contain partials including content from other models. but even this is kind of arbitrary
+  - the main thing that makes pages special cases is that their filenames represent routes
+- posts (default but editable)
+  - template*
+  - title
+  - date
+  - image
+
+other todos:
+- maybe templates and styles are also hidden in 'project settings'. the preview pane doesn't have to disappear, it can all happen on the left side
+- transform image routes in yaml
+- save/load project
+- backup to cloud
+- publish
+- authentication
+- payment
+- wysiwyg editor
+- keyboard shortcuts
+- can preview be an iframe?

@@ -1,11 +1,63 @@
-import React from "react"
 import { SqlProvider } from "./SqlContext"
-import { TwoColumnLayout } from "./TwoColumnLayout"
+import React, { useEffect, useState } from "react"
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable.tsx"
+import { Preview } from "./Preview.jsx"
+import type { SelectedFile } from "../lib/types.jsx"
+import { SidebarProvider, SidebarTrigger } from "./ui/sidebar.jsx"
+import { AppSidebar } from "./AppSidebar.jsx"
+import { SelectedFileDisplay } from "./SelectedFileDisplay.jsx"
 
 const App: React.FC = () => {
+  const [selectedFile, setSelectedFile] = useState<SelectedFile>({
+    activeFile: "main.md",
+    type: "md",
+    contentFile: "main.md",
+  })
+  const [isVertical, setIsVertical] = useState(false)
+
+  useEffect(() => {
+    const handleResize = () => {
+      // Adjust the threshold width to your preference
+      setIsVertical(window.innerWidth <= 768)
+    }
+
+    // Set the initial layout direction
+    handleResize()
+
+    window.addEventListener("resize", handleResize)
+    return () => {
+      window.removeEventListener("resize", handleResize)
+    }
+  }, [])
+
   return (
     <SqlProvider>
-      <TwoColumnLayout />
+      <SidebarProvider>
+        <ResizablePanelGroup
+          direction={isVertical ? "vertical" : "horizontal"}
+          className="min-h-screen max-h-screen">
+          <ResizablePanel defaultSize={50} minSize={30} className="flex">
+            <AppSidebar
+              selectedFile={selectedFile}
+              setSelectedFile={setSelectedFile}
+            />
+            <div className="flex-grow h-full">
+              <SelectedFileDisplay selectedFile={selectedFile} />
+            </div>
+          </ResizablePanel>
+          <ResizableHandle />
+          <ResizablePanel defaultSize={50}>
+            <Preview
+              selectedFile={selectedFile}
+              setSelectedFile={setSelectedFile}
+            />
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </SidebarProvider>
     </SqlProvider>
   )
 }

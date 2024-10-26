@@ -22,6 +22,11 @@ import {
   ContextMenuTrigger,
 } from "./ui/context-menu"
 import { ContextMenuItem } from "@radix-ui/react-context-menu"
+import {
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupLabel,
+} from "./ui/sidebar"
 
 export function FileList<T>({
   type,
@@ -240,22 +245,29 @@ export function FileList<T>({
         : "Assets"
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-[200px]">
-      <div className="flex w-full items-center justify-between p-4 pr-2 font-semibold">
-        <CollapsibleTrigger>{heading}</CollapsibleTrigger>
-        <div className="flex items-center space-x-2">
-          <CollapsibleTrigger>
+    <Collapsible
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      className="group/collapsible">
+      <SidebarGroup>
+        <SidebarGroupLabel asChild>
+          {/* <div className="flex w-full items-center justify-between p-4 pr-2 font-semibold"> */}
+          <CollapsibleTrigger>{heading}</CollapsibleTrigger>
+          {/* <div className="flex items-center space-x-2"> */}
+          {/* <CollapsibleTrigger>
             {isOpen ? (
               <ChevronDown className="h-4 w-4" />
             ) : (
               <ChevronRight className="h-4 w-4" />
             )}
-          </CollapsibleTrigger>
+          </CollapsibleTrigger> */}
+        </SidebarGroupLabel>
+        <SidebarGroupAction title={"Add " + type}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Plus className="h-4 w-4" />
-              </Button>
+              {/* <Button variant="outline" size="icon"> */}
+              <Plus className="h-4 w-4" />
+              {/* </Button> */}
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               {type === "asset" ? null : (
@@ -268,54 +280,56 @@ export function FileList<T>({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-      </div>
+        </SidebarGroupAction>
+        {/* </div> */}
+        {/* </div> */}
 
-      <CollapsibleContent>
-        <ul className="p-4">
-          {files.map(file => (
-            <ContextMenu key={file.name}>
-              <ContextMenuTrigger>
-                <li
-                  onContextMenu={handleContextMenu}
-                  className={`flex cursor-pointer items-center gap-2 rounded p-2 ${
-                    selectedFile.activeFile === file.name
-                      ? "bg-accent"
-                      : "hover:bg-accent/50"
-                  }`}
-                  onClick={() =>
-                    setSelectedFile(selectedFile => ({
-                      activeFile: file.name,
-                      type: file.type,
-                      contentFile:
-                        file.type === "md"
-                          ? file.name
-                          : selectedFile.contentFile,
-                    }))
-                  }>
-                  <File className="h-4 w-4" />
-                  {/* {file.name.length > 12
+        <CollapsibleContent>
+          <ul className="">
+            {files.map(file => (
+              <ContextMenu key={file.name}>
+                <ContextMenuTrigger>
+                  <li
+                    onContextMenu={handleContextMenu}
+                    className={`flex cursor-pointer items-center gap-2 rounded p-2 ${
+                      selectedFile.activeFile === file.name
+                        ? "bg-accent"
+                        : "hover:bg-accent/50"
+                    }`}
+                    onClick={() =>
+                      setSelectedFile(selectedFile => ({
+                        activeFile: file.name,
+                        type: file.type,
+                        contentFile:
+                          file.type === "md"
+                            ? file.name
+                            : selectedFile.contentFile,
+                      }))
+                    }>
+                    <File className="h-4 w-4" />
+                    {/* {file.name.length > 12
                     ? file.name.slice(0, 12) + "..."
                     : file.name} */}
-                  {file.name}
-                </li>
-              </ContextMenuTrigger>
-              <ContextMenuContent>
-                <ContextMenuItem
-                  className="flex text-sm cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-accent hover:outline-none"
-                  onClick={handleRenameFileClick}>
-                  Rename
-                </ContextMenuItem>
-                <ContextMenuItem
-                  className="flex text-sm cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-accent hover:outline-none"
-                  onClick={handleDeleteFileClick}>
-                  Delete
-                </ContextMenuItem>
-              </ContextMenuContent>
-            </ContextMenu>
-          ))}
-        </ul>
-      </CollapsibleContent>
+                    {file.name}
+                  </li>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem
+                    className="flex text-sm cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-accent hover:outline-none"
+                    onClick={handleRenameFileClick}>
+                    Rename
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    className="flex text-sm cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-accent hover:outline-none"
+                    onClick={handleDeleteFileClick}>
+                    Delete
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
+            ))}
+          </ul>
+        </CollapsibleContent>
+      </SidebarGroup>
     </Collapsible>
   )
 }
