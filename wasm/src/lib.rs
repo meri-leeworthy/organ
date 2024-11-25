@@ -1,54 +1,81 @@
-use std::collections::HashMap;
-
 use handlebars::Handlebars;
 use pulldown_cmark::{html, Options, Parser};
 use regex::Regex;
-use serde_json::Value;
-use serde_wasm_bindgen::from_value;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Map, Value};
+use serde_wasm_bindgen::{from_value, to_value};
+use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsValue;
+use wasm_bindgen_test::wasm_bindgen_test;
+
+#[derive(Serialize, Deserialize, Debug)]
+struct UnparsedContentData {
+    content: String,
+    data: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct ContentData {
+    content: String,
+    data: Map<String, Value>,
+}
+
+// Alias for the expected record type
+type UnparsedContentRecord = HashMap<String, UnparsedContentData>;
+type ContentRecord = HashMap<String, ContentData>;
 
 #[wasm_bindgen]
 pub fn render(
-    template_content: &str,
-    markdown_input: &str,
-    css_input: &str,
-    class_name: &str,
+    current_filename: &str,
+    context: &JsValue, // validated as a HashMap of files {filename: {content: string (markdown), data: string (JSON)}}
+    css: &str,         // fixed parameter to the template
+    class: &str,       // class name to scope the CSS
     partials: &JsValue, // Assume partials are passed as a JS object with partial names and content
-    images: &JsValue,   // JS object with image filenames and URLs
+    // todo: maybe partials, css and images are all included in context object
+    images: &JsValue, // JS object with image filenames and URLs
 ) -> Result<String, JsValue> {
-    // Step 1: Split Markdown into frontmatter and content
-    let (frontmatter_str, markdown_content) = match split_frontmatter(markdown_input) {
-        Ok(result) => result,
-        Err(e) => return Err(JsValue::from_str(&e)),
+    // Validate context as a Record<string, {content: string, data: string}>
+    let context = validate_content_record(context).and_then(parse_context)?;
+
+    // Get the current file from the context
+    let current_file = context
+        .get(current_filename)
+        .ok_or_else(|| JsValue::from_str("Current file not found in context"))?;
+
+    // Get the template filename from the current file
+    let template_name = match current_file.data.get("template").unwrap().clone() {
+        Value::String(s) => s,
+        _ => return Err(JsValue::from_str("Template property not found")),
     };
 
-    // Step 2: Deserialize frontmatter into serde_json::Value
-    let mut context = match deserialize_frontmatter(&frontmatter_str) {
-        Ok(val) => val,
-        Err(e) => return Err(JsValue::from_str(&e)),
-    };
+    // Get the template content from the context
+    let template = context
+        .get(&template_name)
+        .ok_or_else(|| JsValue::from_str("Template not found in context"))?
+        .content
+        .clone();
 
-    // Step 3: Render Markdown to HTML
-    let html_output = match markdown_to_html(&markdown_content, images) {
+    // Render Markdown to HTML
+    let html_output = match markdown_to_html(&current_file.content, images) {
         Ok(output) => output,
         Err(e) => return Err(e),
     };
 
-    // Step 4: Insert HTML into context as 'content'
-    context["content"] = Value::String(html_output);
-
-    // Step 5: Process the CSS to scope it to the class_name
-    let scoped_css = match scope_css(css_input, class_name) {
+    // Process the CSS to scope it to the class_name
+    let scoped_css = match scope_css(css, class) {
         Ok(output) => output,
         Err(e) => return Err(JsValue::from_str(&e)),
     };
 
-    // Insert scoped CSS and class name into context
-    context["css"] = Value::String(scoped_css);
-    context["class_name"] = Value::String(class_name.trim_start_matches('.').to_string());
+    let render_context = json!({
+        "content": html_output,
+        "css": scoped_css,
+        "class_name": class.trim_start_matches('.'),
+    });
 
-    // Step 6: Render the template with the context
-    let rendered_template = match render_template(template_content, partials, &context) {
+    // Render the template with the context
+    let rendered_template = match render_template(&template, partials, &render_context) {
         Ok(output) => output,
         Err(e) => return Err(JsValue::from_str(&e)),
     };
@@ -104,7 +131,7 @@ fn scope_css(css_input: &str, class_name: &str) -> Result<String, String> {
             .map(|s| format!("{} {}", class_name, s.trim()))
             .collect::<Vec<_>>()
             .join(", ");
-        format!("{} {{", scoped_selectors)
+        format!(" {} {{", scoped_selectors)
     });
 
     Ok(result.to_string())
@@ -131,40 +158,129 @@ fn markdown_to_html(markdown_input: &str, images: &JsValue) -> Result<String, Js
     Ok(html_output)
 }
 
-/// Splits the markdown input into frontmatter and content.
-/// Assumes frontmatter is enclosed between '---' lines at the beginning.
-fn split_frontmatter(markdown: &str) -> Result<(String, String), String> {
-    let lines: Vec<&str> = markdown.lines().collect();
-    if lines.len() < 2 || !lines[0].trim_start().starts_with("---") {
-        return Err("Missing or invalid YAML frontmatter.".into());
-    }
-
-    // Find the closing '---'
-    let closing_index = lines[1..]
-        .iter()
-        .position(|line| line.trim_start().starts_with("---"))
-        .map(|idx| idx + 1)
-        .ok_or_else(|| "YAML frontmatter not closed with '---'.".to_string())?;
-
-    let frontmatter = lines[1..closing_index].join("\n");
-    let content = lines[closing_index + 1..].join("\n");
-
-    Ok((frontmatter, content))
+fn validate_content_record(
+    value: &JsValue,
+) -> Result<UnparsedContentRecord, serde_wasm_bindgen::Error> {
+    serde_wasm_bindgen::from_value(value.clone())
 }
 
-/// Deserializes YAML frontmatter into serde_json::Value
-fn deserialize_frontmatter(frontmatter: &str) -> Result<Value, String> {
-    let yaml_value: serde_yaml::Value =
-        serde_yaml::from_str(frontmatter).map_err(|e| format!("YAML parse error: {}", e))?;
+fn parse_file(file: &UnparsedContentData) -> Result<ContentData, serde_json::Error> {
+    let data = serde_json::from_str(&file.data)?;
+    Ok(ContentData {
+        content: file.content.clone(),
+        data,
+    })
+}
 
-    // Convert serde_yaml::Value to serde_json::Value
-    let json_value = serde_json::to_value(yaml_value)
-        .map_err(|e| format!("Conversion to JSON Value error: {}", e))?;
+fn parse_context(
+    context: UnparsedContentRecord,
+) -> Result<ContentRecord, serde_wasm_bindgen::Error> {
+    context
+        .into_iter()
+        .map(|(filename, file)| {
+            parse_file(&file)
+                .map(|parsed_file| (filename.clone(), parsed_file))
+                .map_err(|e| {
+                    serde_wasm_bindgen::Error::new(&format!(
+                        "Failed to parse file {}: {}\nFile content: {:?}",
+                        filename, e, file
+                    ))
+                })
+        })
+        .collect()
+}
 
-    // Ensure it's a JSON object
-    if !json_value.is_object() {
-        return Err("Frontmatter must be a YAML object.".into());
+#[cfg(test)]
+mod tests {
+    use super::*;
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    fn test_scope_css() {
+        let css = "body { color: black; } .header { font-size: 20px; }";
+        let class_name = ".scoped";
+        let expected = " .scoped body { color: black; } .scoped .header { font-size: 20px; }";
+        let result = scope_css(css, class_name).unwrap();
+        assert_eq!(result, expected);
     }
 
-    Ok(json_value)
+    #[wasm_bindgen_test]
+    fn test_markdown_to_html() {
+        let markdown = "# Hello World\nThis is a test.";
+        let images = serde_wasm_bindgen::to_value(&json!({})).unwrap();
+        let expected = "<h1>Hello World</h1>\n<p>This is a test.</p>\n";
+        let result = markdown_to_html(markdown, &images).unwrap();
+        print!("{}", result);
+        assert_eq!(result, expected);
+    }
+
+    #[wasm_bindgen_test]
+    fn test_validate_content_record() {
+        // Construct the valid test data using Rust data structures
+        let mut valid_map = HashMap::new();
+        valid_map.insert(
+            "file1.md".to_string(),
+            UnparsedContentData {
+                content: "# Hello".to_string(),
+                data: "{\"template\": \"template1\"}".to_string(),
+            },
+        );
+        let valid_context = to_value(&valid_map).unwrap();
+        let result = validate_content_record(&valid_context);
+        match result {
+            Ok(_) => assert!(true),
+            Err(e) => panic!("Validation failed: {:?}", e),
+        }
+
+        // Construct the invalid test data to trigger a deserialization error
+        let mut invalid_map = HashMap::new();
+        invalid_map.insert(
+            "file1.md".to_string(),
+            serde_json::json!({
+                "content": "# Hello",
+                "data": 123  // Invalid type for 'data', should be a string
+            }),
+        );
+        let invalid_context = to_value(&invalid_map).unwrap();
+        let result = validate_content_record(&invalid_context);
+        assert!(result.is_err());
+    }
+
+    #[wasm_bindgen_test]
+    fn test_parse_file() {
+        let unparsed_content = UnparsedContentData {
+            content: "# Hello".to_string(),
+            data: "{\"template\": \"template1\"}".to_string(),
+        };
+        let result = parse_file(&unparsed_content);
+        assert!(result.is_ok());
+        let parsed_content = result.unwrap();
+        assert_eq!(parsed_content.content, "# Hello");
+        assert_eq!(parsed_content.data.get("template").unwrap(), "template1");
+    }
+
+    #[wasm_bindgen_test]
+    fn test_parse_context() {
+        let unparsed_context = HashMap::from([(
+            "file1.md".to_string(),
+            UnparsedContentData {
+                content: "# Hello".to_string(),
+                data: "{\"template\": \"template1\"}".to_string(),
+            },
+        )]);
+        let result = parse_context(unparsed_context);
+        assert!(result.is_ok());
+        let parsed_context = result.unwrap();
+        assert!(parsed_context.contains_key("file1.md"));
+    }
+
+    #[wasm_bindgen_test]
+    fn test_render_template() {
+        let template_content = "Hello, {{name}}!";
+        let partials = serde_wasm_bindgen::to_value(&json!({})).unwrap();
+        let context = json!({ "name": "World" });
+        let result = render_template(template_content, &partials, &context);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "Hello, World!");
+    }
 }
