@@ -60,7 +60,7 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
             query: `CREATE TABLE IF NOT EXISTS files (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            type TEXT NOT NULL CHECK (type IN ('css', 'hbs', 'md', 'asset')),
+            type TEXT NOT NULL CHECK (type IN ('css', 'hbs', 'hbsp', 'md', 'asset')),
             content TEXT,
             file_path TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -95,19 +95,19 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
           // 5. Insert test file: styles.css
           {
             query: `INSERT OR IGNORE INTO files (name, type, content) VALUES (?, ?, ?);`,
-            params: ["styles.css", "css", defaultCss],
+            params: ["styles", "css", defaultCss],
           },
 
-          // 6. Insert test file: template.hbs
+          // 6. Insert test file: index.hbs
           {
             query: `INSERT OR IGNORE INTO files (name, type, content) VALUES (?, ?, ?);`,
-            params: ["template.hbs", "hbs", defaultHbs],
+            params: ["index", "hbs", defaultHbs],
           },
 
           // 7. Insert test file: main.md
           {
             query: `INSERT OR IGNORE INTO files (name, type, content) VALUES (?, ?, ?);`,
-            params: ["main.md", "md", defaultMd],
+            params: ["main", "md", defaultMd],
           },
         ]
 
