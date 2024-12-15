@@ -8,7 +8,8 @@ export const openDatabase = () => {
   }
 
   return new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open("sqljs-db", 3) // Ensure this version is higher if needed for schema changes
+    const request = indexedDB.open("sqljs-db", 4) // Ensure this version is higher if needed for schema changes
+    // to clarify i think this means the indexedDB schema not the sql schema
 
     request.onupgradeneeded = event => {
       const db = request.result

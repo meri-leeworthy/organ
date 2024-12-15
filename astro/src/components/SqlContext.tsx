@@ -37,10 +37,7 @@ const defaultHbs = `<style>{{{css}}}</style>
   {{/if}}
 </div>`
 
-const defaultMd = `---
-heading: My Document
----
-## Welcome to My Document
+const defaultMd = `# Welcome to My Document
 
 This is a sample Markdown file.`
 
@@ -55,13 +52,43 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
     if (!sql.loading && !sql.error && sql.execute && !schemaInitialized) {
       const initializeSchemaAndData = () => {
         const queries = [
-          // 1. Create the 'files' table
+          // Create the 'models' table
+          {
+            query: `CREATE TABLE IF NOT EXISTS models (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            is_system BOOLEAN NOT NULL DEFAULT FALSE,
+            schema JSON NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );`,
+          },
+
+          // Create a trigger to update 'updated_at' on record updates
+          {
+            query: `CREATE TRIGGER IF NOT EXISTS update_models_updated_at
+            AFTER UPDATE ON models
+            FOR EACH ROW
+            BEGIN
+              UPDATE models SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+            END;`,
+          },
+
+          // Insert default models for 'pages' and 'posts'
+          {
+            query: `INSERT OR IGNORE INTO models (name, is_system, schema) VALUES
+            ('pages', TRUE, '{"fields": [{"name": "template", "type": "text"}, {"name": "title", "type": "string"}]}'),
+            ('posts', TRUE, '{"fields": [{"name": "template", "type": "text"}, {"name": "title", "type": "string"}, {"name": "date", "type": "date"}, {"name": "tags", "type": "array"}]}');`,
+          },
+
+          // Create the 'files' table
           {
             query: `CREATE TABLE IF NOT EXISTS files (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             type TEXT NOT NULL CHECK (type IN ('css', 'hbs', 'hbsp', 'md', 'asset')),
             content TEXT,
+            data TEXT NOT NULL DEFAULT '{}',
             file_path TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -69,12 +96,12 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
           );`,
           },
 
-          // 2. Create a partial unique index for 'type' = 'css'
+          // Create a partial unique index for 'type' = 'css'
           {
             query: `CREATE UNIQUE INDEX IF NOT EXISTS unique_type_css ON files(type) WHERE type = 'css';`,
           },
 
-          // 3. Create indexes for performance optimization
+          // Create indexes for performance optimization
           {
             query: `CREATE INDEX IF NOT EXISTS idx_files_type ON files(type);`,
           },
@@ -82,7 +109,7 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
             query: `CREATE INDEX IF NOT EXISTS idx_files_name ON files(name);`,
           },
 
-          // 4. Create a trigger to update 'updated_at' on record updates
+          // Create a trigger to update 'updated_at' on record updates
           {
             query: `CREATE TRIGGER IF NOT EXISTS update_files_updated_at
             AFTER UPDATE ON files
@@ -92,19 +119,19 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
             END;`,
           },
 
-          // 5. Insert test file: styles.css
+          // Insert test file: styles.css
           {
             query: `INSERT OR IGNORE INTO files (name, type, content) VALUES (?, ?, ?);`,
             params: ["styles", "css", defaultCss],
           },
 
-          // 6. Insert test file: index.hbs
+          // Insert test file: index.hbs
           {
             query: `INSERT OR IGNORE INTO files (name, type, content) VALUES (?, ?, ?);`,
             params: ["index", "hbs", defaultHbs],
           },
 
-          // 7. Insert test file: main.md
+          // Insert test file: main.md
           {
             query: `INSERT OR IGNORE INTO files (name, type, content) VALUES (?, ?, ?);`,
             params: ["main", "md", defaultMd],

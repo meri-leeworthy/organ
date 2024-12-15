@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useSqlContext } from "./SqlContext"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert.jsx"
 import type { FileData, SelectedFile } from "../lib/types.jsx"
 import type { ParamsObject } from "sql.js"
 import { useDebounce } from "@/hooks/useDebounce.js"
+import { getValidBlobUrl } from "@/lib/utils.js"
+
+type Context = Record<string, { content: string; data: string }>
 
 export const Preview = ({
   selectedFile,
@@ -18,6 +21,7 @@ export const Preview = ({
   // maybe instead of selectedFileName it's an object with the file name, type, and the relevant content file
   // which may or may not be the same as the selected file name
 
+  const iframeRef = useRef<HTMLIFrameElement | null>(null)
   const { execute, loading, error, schemaInitialized } = useSqlContext()
   const [files, setFiles] = useState<FileData[]>([])
   const [errorMessage, setErrorMessage] = useState<string>("")
@@ -28,10 +32,10 @@ export const Preview = ({
   )
   const [wasmModule, setWasmModule] = useState<{
     render: (
-      template: string,
-      markdown: string,
+      current_filename: string,
+      context: Context,
       css: string,
-      context: string,
+      class_name: string,
       partials: Record<string, string>,
       images: Record<string, string>
     ) => string
@@ -63,9 +67,17 @@ export const Preview = ({
           name: file.name?.toString() || "",
           content: file.content?.toString() || "",
           type: file.type?.toString() as FileData["type"],
+          data: JSON.parse(file.data?.toString() || "{}"),
         }))
-        // console.log("Preview.tsx: Result from SQL.js:", result)
+        console.log("Preview.tsx: Result from SQL.js:", result)
         setFiles(files)
+
+        const assets = files.filter(file => file.type === "asset")
+        await Promise.all(
+          assets.map(async asset => {
+            await getValidBlobUrl(asset.name, asset.content, execute)
+          })
+        )
       } catch (err) {
         console.error("Error fetching data:", err)
       }
@@ -126,36 +138,39 @@ export const Preview = ({
       return
     }
 
-    const template = files.find(file => file.name === "template.hbs")
     const partialFiles = files.filter(
-      file => file.name.endsWith(".hbs") && file.name !== "template.hbs"
+      file => file.type === "hbs" && file.name !== "index"
     )
-    const markdownFile = files.find(
-      file => file.name === selectedFile.contentFile
-    )
-    const cssFile = files.find(file => file.name.endsWith(".css"))
+    const cssFile = files.find(file => file.type === "css")
     const assets = files.filter(file => file.type === "asset")
     const imageURLs: Record<string, string> = {}
     for (const asset of assets) {
       // Adjust the MIME type based on your requirements
-      if (asset.name.match(/\.(jpg|jpeg|png|gif|svg)$/i)) {
-        imageURLs[asset.name] = asset.content
-      }
+      imageURLs[asset.name] = asset.content
     }
 
-    const markdownContent = markdownFile ? markdownFile.content : ""
-    const templateContent = template ? template.content : ""
     const cssContent = cssFile ? cssFile.content : ""
     const partials: Record<string, string> = {}
     for (const partial of partialFiles) {
       partials[partial.name] = partial.content
     }
 
+    const context: Context = {}
+    files.forEach(file => {
+      context[file.name] = {
+        content: file.content,
+        data: JSON.stringify(file.data), // the actual file data should be stored in the DB
+      }
+    })
+
+    // console.log("Selected file:", selectedFile)
+    // console.log("Context:", context)
+
     try {
       // Pass imageURLs as a JSON string or appropriate format
       const combinedContent = wasmModule.render(
-        templateContent,
-        markdownContent,
+        selectedFile.contentFile,
+        context,
         cssContent,
         ".preview-pane",
         partials, // existing partials
@@ -185,34 +200,35 @@ export const Preview = ({
     }
   }, [])
 
-  const handleLinkClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    let target = event.target as HTMLElement | null
+  // const handleLinkClick = (event: React.MouseEvent<HTMLDivElement>) => {
+  //   event.preventDefault()
+  //   let target = event.target as HTMLElement | null
 
-    while (target && target !== event.currentTarget) {
-      console.log("Target:", target)
-      if (target.tagName.toLowerCase() === "a") {
-        const href = (target as HTMLAnchorElement).getAttribute("href")
-        console.log("Link href:", href)
-        if (href) {
-          const isInternal = href.startsWith("/")
+  //   while (target && target !== event.currentTarget) {
+  //     console.log("Target:", target)
+  //     if (target.tagName.toLowerCase() === "a") {
+  //       const href = (target as HTMLAnchorElement).getAttribute("href")
+  //       console.log("Link href:", href)
+  //       if (href) {
+  //         const isInternal = href.startsWith("/")
 
-          if (isInternal) {
-            if (onLinkClick) {
-              onLinkClick(href)
-            }
-          } else {
-            // Optionally handle external links, e.g., open in new tab
-            // event.preventDefault();
-            // window.open(href, '_blank');
-          }
-        }
-        break
-      }
-      target = target.parentElement
-    }
-  }
+  //         if (isInternal) {
+  //           if (onLinkClick) {
+  //             onLinkClick(href)
+  //           }
+  //         } else {
+  //           // Optionally handle external links, e.g., open in new tab
+  //           // event.preventDefault();
+  //           // window.open(href, '_blank');
+  //         }
+  //       }
+  //       break
+  //     }
+  //     target = target.parentElement
+  //   }
+  // }
 
+  // Handler to set the active file
   const onLinkClick = (href: string) => {
     setSelectedFile({
       activeFile: href.slice(1),
@@ -221,6 +237,40 @@ export const Preview = ({
     })
     // setSelectedContent(href.slice(1))
   }
+
+  const handleIframeClick = (event: MouseEvent) => {
+    const target = event.target as HTMLElement
+
+    if (target.tagName.toLowerCase() === "a") {
+      const href = target.getAttribute("href")
+      if (href) {
+        const isInternal = href.startsWith("/")
+        if (isInternal) {
+          event.preventDefault()
+          onLinkClick(href)
+        } else {
+          // Optionally handle external links, e.g., open in new tab
+          // window.open(href, '_blank')
+        }
+      }
+    }
+  }
+
+  // Attach event listeners after iframe loads
+  const handleIframeLoad = () => {
+    const iframe = iframeRef.current
+    if (iframe && iframe.contentDocument) {
+      iframe.contentDocument.addEventListener("click", handleIframeClick)
+    }
+  }
+
+  // Clean up event listeners when component unmounts or iframe changes
+  useEffect(() => {
+    const iframe = iframeRef.current
+    if (iframe && iframe.contentDocument) {
+      iframe.contentDocument.removeEventListener("click", handleIframeClick)
+    }
+  }, [previewContent]) // Re-run effect when previewContent changes
 
   return (
     <>
@@ -236,11 +286,13 @@ export const Preview = ({
           </div>
         </div>
       ) : (
-        <div
+        <iframe
+          ref={iframeRef}
           className="h-full items-center overflow-y-scroll border-l-1 p-2 w-full"
           id="preview-pane"
-          onClick={handleLinkClick}
-          dangerouslySetInnerHTML={{ __html: previewContent }}></div>
+          onLoad={handleIframeLoad}
+          srcDoc={previewContent}
+        />
       )}
     </>
   )

@@ -1,44 +1,58 @@
 import type { SelectedFile } from "@/lib/types"
 import { FileList } from "./FileList"
-import { ScrollArea } from "./ui/scroll-area"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupAction,
-  SidebarGroupLabel,
-} from "./ui/sidebar"
-import { Collapsible, CollapsibleTrigger } from "./ui/collapsible"
-import { Plus } from "lucide-react"
+import { Sidebar, SidebarContent } from "./ui/sidebar"
+import { Button } from "./ui/button"
 
 export function AppSidebar({
   selectedFile,
   setSelectedFile,
+  editTemplate,
+  setEditTemplate,
 }: {
   selectedFile: SelectedFile
   setSelectedFile: React.Dispatch<React.SetStateAction<SelectedFile>>
+  editTemplate: boolean
+  setEditTemplate: React.Dispatch<React.SetStateAction<boolean>>
 }) {
-  //className="flex h-full"
-  //"h-full flex flex-col"
-
   return (
     <Sidebar>
-      <SidebarContent>
-        <FileList
-          type="template"
-          selectedFile={selectedFile}
-          setSelectedFile={setSelectedFile}
-        />
-        <FileList
-          type="content"
-          selectedFile={selectedFile}
-          setSelectedFile={setSelectedFile}
-        />
-        <FileList
-          type="asset"
-          selectedFile={selectedFile}
-          setSelectedFile={setSelectedFile}
-        />
+      <SidebarContent className="p-2">
+        {editTemplate ? (
+          <>
+            <FileList
+              key="template" // force React to dismount and remount the component
+              type="template"
+              selectedFile={selectedFile}
+              setSelectedFile={setSelectedFile}
+            />
+            <FileList
+              key="css"
+              type="css"
+              selectedFile={selectedFile}
+              setSelectedFile={setSelectedFile}
+            />
+          </>
+        ) : (
+          <>
+            <FileList
+              key="content"
+              type="content"
+              selectedFile={selectedFile}
+              setSelectedFile={setSelectedFile}
+            />
+            <FileList
+              key="asset"
+              type="asset"
+              selectedFile={selectedFile}
+              setSelectedFile={setSelectedFile}
+            />
+          </>
+        )}
+        <Button
+          className="mt-auto bg-blue-600"
+          onClick={() => setEditTemplate(editTemplate => !editTemplate)}>
+          Edit {editTemplate ? "Content" : "Template"}
+        </Button>
       </SidebarContent>
     </Sidebar>
   )

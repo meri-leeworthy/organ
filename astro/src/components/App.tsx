@@ -7,17 +7,18 @@ import {
 } from "@/components/ui/resizable.tsx"
 import { Preview } from "./Preview.jsx"
 import type { SelectedFile } from "../lib/types.jsx"
-import { SidebarProvider, SidebarTrigger } from "./ui/sidebar.jsx"
+import { SidebarProvider } from "./ui/sidebar.jsx"
 import { AppSidebar } from "./AppSidebar.jsx"
 import { SelectedFileDisplay } from "./SelectedFileDisplay.jsx"
 
 const App: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<SelectedFile>({
-    activeFile: "main.md",
+    activeFile: "main",
     type: "md",
-    contentFile: "main.md",
+    contentFile: "main",
   })
   const [isVertical, setIsVertical] = useState(false)
+  const [editTemplate, setEditTemplate] = useState(false)
 
   useEffect(() => {
     const handleResize = () => {
@@ -44,6 +45,8 @@ const App: React.FC = () => {
             <AppSidebar
               selectedFile={selectedFile}
               setSelectedFile={setSelectedFile}
+              editTemplate={editTemplate}
+              setEditTemplate={setEditTemplate}
             />
             <div className="flex-grow h-full">
               <SelectedFileDisplay selectedFile={selectedFile} />

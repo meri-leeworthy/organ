@@ -9,6 +9,12 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_test::wasm_bindgen_test;
 
+// #[wasm_bindgen]
+// extern "C" {
+//     #[wasm_bindgen(js_namespace = console)]
+//     fn log(s: &str); // log to JS console
+// }
+
 #[derive(Serialize, Deserialize, Debug)]
 struct UnparsedContentData {
     content: String,
@@ -25,6 +31,7 @@ struct ContentData {
 type UnparsedContentRecord = HashMap<String, UnparsedContentData>;
 type ContentRecord = HashMap<String, ContentData>;
 
+// Should return a string of rendered HTML for the current filename
 #[wasm_bindgen]
 pub fn render(
     current_filename: &str,
@@ -86,7 +93,7 @@ pub fn render(
 fn render_template(
     template_content: &str,
     partials: &JsValue,
-    context: &Value,
+    render_context: &Value,
 ) -> Result<String, String> {
     let mut handlebars = Handlebars::new();
 
@@ -113,7 +120,7 @@ fn render_template(
     }
 
     // Render the template
-    match handlebars.render("template", context) {
+    match handlebars.render("template", render_context) {
         Ok(output) => Ok(output),
         Err(e) => Err(format!("Rendering error: {}", e)),
     }

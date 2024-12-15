@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react"
-import type { FileData, SelectedFile } from "../lib/types"
+import {
+  extensionMap,
+  headingMap,
+  type Collection,
+  type FileData,
+  type SelectedFile,
+} from "../lib/types"
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "./ui/collapsible"
-import { ChevronDown, ChevronRight, File, Plus } from "lucide-react"
+import { File, Plus } from "lucide-react"
 import { useSqlContext } from "./SqlContext"
 import type { ParamsObject } from "sql.js"
 import {
@@ -14,26 +20,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu"
-import { Button } from "./ui/button"
 import { deleteAssetFromIndexedDB, saveAssetToIndexedDB } from "@/lib/idbHelper"
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuTrigger,
-} from "./ui/context-menu"
-import { ContextMenuItem } from "@radix-ui/react-context-menu"
 import {
   SidebarGroup,
   SidebarGroupAction,
   SidebarGroupLabel,
 } from "./ui/sidebar"
+import { DotsVerticalIcon } from "@radix-ui/react-icons"
 
-export function FileList<T>({
+export function FileList({
   type,
   selectedFile,
   setSelectedFile,
 }: {
-  type: "template" | "content" | "asset"
+  type: Collection
   selectedFile: SelectedFile
   setSelectedFile: React.Dispatch<React.SetStateAction<SelectedFile>>
 }) {
@@ -47,12 +47,14 @@ export function FileList<T>({
     if (!schemaInitialized || loading || error) return
     const fetchData = async () => {
       try {
-        const query =
-          type === "template"
-            ? "SELECT * FROM files WHERE type IN ('css', 'hbs');"
-            : type === "content"
-              ? "SELECT * FROM files WHERE type = 'md';"
-              : "SELECT * FROM files WHERE type = 'asset';"
+        const queryMap = {
+          template: "SELECT * FROM files WHERE type IN ('hbs');",
+          content: "SELECT * FROM files WHERE type = 'md';",
+          asset: "SELECT * FROM files WHERE type = 'asset';",
+          css: "SELECT * FROM files WHERE type = 'css';",
+        }
+
+        const query = queryMap[type]
         const result = execute(query)
         const files = result.map((file: ParamsObject) => ({
           name: file.name?.toString() || "",
@@ -72,29 +74,25 @@ export function FileList<T>({
   if (loading || !schemaInitialized) return <div>Loading...</div>
   if (error) return <div>Error: {error.message}</div>
 
-  const handleAddFile = (type: "template" | "content" | "asset") => {
+  const handleAddFile = (type: Collection) => {
     if (!schemaInitialized || loading || error) return
     const fileExtension = type === "template" ? "hbs" : "md"
 
     // Function to generate unique filename
-    const generateUniqueFileName = (
-      baseName: string,
-      files: FileData[],
-      extension: string
-    ) => {
-      let fileName = `${baseName}.${extension}`
+    const generateUniqueFileName = (baseName: string, files: FileData[]) => {
+      let fileName = `${baseName}`
       let counter = 1
 
       // Check if file with this name already exists
       while (files.some(file => file.name === fileName)) {
-        fileName = `${baseName}${counter}.${extension}`
+        fileName = `${baseName}${counter}`
         counter++
       }
 
       return fileName
     }
 
-    const newFileName = generateUniqueFileName("newfile", files, fileExtension)
+    const newFileName = generateUniqueFileName("untitled", files)
 
     execute(
       "INSERT OR IGNORE INTO files (name, type, content) VALUES (?, ?, ?);",
@@ -106,35 +104,20 @@ export function FileList<T>({
     ])
   }
 
-  // Create object URLs for image assets
-  // useEffect(() => {
-  //   const urls: Record<string, string> = {}
-
-  //   assets.forEach(asset => {
-  //     // Adjust the MIME type based on your requirements
-  //     if (asset.name.match(/\.(jpg|jpeg|png|gif|svg)$/i)) {
-  //       urls[asset.name] = URL.createObjectURL(
-  //         new Blob([asset.content], { type: "image/*" })
-  //       )
-  //     }
-  //   })
-
-  //   setImageURLs(urls)
-
-  //   // Cleanup: Revoke object URLs when assets change or component unmounts
-  //   return () => {
-  //     Object.values(urls).forEach(url => URL.revokeObjectURL(url))
-  //   }
-  // }, [assets])
-
-  const handleUploadFile = async (type: "template" | "content" | "asset") => {
+  const handleUploadFile = async (type: Collection) => {
     if (!schemaInitialized || loading || error) return
     const input = document.createElement("input")
     input.type = "file"
-    input.accept =
-      type === "template" ? ".html,.htm,.hbs" : type === "content" ? ".md" : "*"
-    const normalizedType =
-      type === "template" ? "hbs" : type === "asset" ? "asset" : "md"
+
+    const uploadExtensionMap = {
+      template: ".html,.htm,.hbs",
+      content: ".md",
+      css: ".css",
+      asset: "*",
+    }
+    input.accept = uploadExtensionMap[type]
+
+    const normalizedType = extensionMap[type]
     input.onchange = async (e: Event) => {
       const file = (e.target as HTMLInputElement).files?.[0]
       if (file) {
@@ -142,7 +125,10 @@ export function FileList<T>({
           type === "asset" ? await file.arrayBuffer() : await file.text()
         const newFile = { name: file.name, content }
 
-        if (type === "asset" && file.name.match(/\.(jpg|jpeg|png|gif|svg)$/i)) {
+        if (
+          type === "asset" &&
+          file.name.match(/\.(jpg|jpeg|png|gif|svg|webp)$/i)
+        ) {
           const url = URL.createObjectURL(
             new Blob([content], { type: "image/*" })
           )
@@ -175,20 +161,9 @@ export function FileList<T>({
     input.click()
   }
 
-  // const handleRemoveAsset = (fileName: string) => {
-  //   setAssets(prevAssets => prevAssets.filter(file => file.name !== fileName))
-  //   setImageURLs(prevURLs => {
-  //     const { [fileName]: _, ...rest } = prevURLs
-  //     URL.revokeObjectURL(_)
-  //     return rest
-  //   })
-  // }
-
   const handleContextMenu = (e: React.MouseEvent<HTMLLIElement>) => {
-    // e.preventDefault() // Prevent the default right-click menu
     const fileName = e.currentTarget.textContent || ""
     setContextMenuFile(fileName) // Store the clicked file's name
-    // Logic to show the custom context menu
   }
 
   const handleRenameFile = (oldName: string, newName: string) => {
@@ -217,7 +192,12 @@ export function FileList<T>({
 
   const handleDeleteFile = (fileName: string) => {
     if (!schemaInitialized || loading || error) return
-    execute("DELETE FROM files WHERE name = ?;", [fileName])
+
+    const extension = extensionMap[type]
+    execute("DELETE FROM files WHERE name = ? AND type = ?;", [
+      fileName,
+      extension,
+    ])
     setFiles(files => files.filter(file => file.name !== fileName))
     if (selectedFile.activeFile === fileName) {
       setSelectedFile(selectedFile => ({
@@ -237,12 +217,7 @@ export function FileList<T>({
     }
   }
 
-  const heading =
-    type === "template"
-      ? "Templates"
-      : type === "content"
-        ? "Content"
-        : "Assets"
+  const heading = headingMap[type]
 
   return (
     <Collapsible
@@ -251,23 +226,12 @@ export function FileList<T>({
       className="group/collapsible">
       <SidebarGroup>
         <SidebarGroupLabel asChild>
-          {/* <div className="flex w-full items-center justify-between p-4 pr-2 font-semibold"> */}
           <CollapsibleTrigger>{heading}</CollapsibleTrigger>
-          {/* <div className="flex items-center space-x-2"> */}
-          {/* <CollapsibleTrigger>
-            {isOpen ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </CollapsibleTrigger> */}
         </SidebarGroupLabel>
         <SidebarGroupAction title={"Add " + type}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              {/* <Button variant="outline" size="icon"> */}
               <Plus className="h-4 w-4" />
-              {/* </Button> */}
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               {type === "asset" ? null : (
@@ -281,51 +245,52 @@ export function FileList<T>({
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarGroupAction>
-        {/* </div> */}
-        {/* </div> */}
 
         <CollapsibleContent>
           <ul className="">
             {files.map(file => (
-              <ContextMenu key={file.name}>
-                <ContextMenuTrigger>
-                  <li
-                    onContextMenu={handleContextMenu}
-                    className={`flex cursor-pointer items-center gap-2 rounded p-2 ${
-                      selectedFile.activeFile === file.name
-                        ? "bg-accent"
-                        : "hover:bg-accent/50"
-                    }`}
-                    onClick={() =>
-                      setSelectedFile(selectedFile => ({
-                        activeFile: file.name,
-                        type: file.type,
-                        contentFile:
-                          file.type === "md"
-                            ? file.name
-                            : selectedFile.contentFile,
-                      }))
-                    }>
-                    <File className="h-4 w-4" />
-                    {/* {file.name.length > 12
+              <DropdownMenu key={file.name}>
+                <li
+                  onContextMenu={handleContextMenu}
+                  className={`group/file flex cursor-pointer items-center gap-2 rounded p-2 ${
+                    selectedFile.activeFile === file.name &&
+                    selectedFile.type === file.type
+                      ? "bg-accent"
+                      : "hover:bg-accent/50"
+                  }`}
+                  onClick={() =>
+                    setSelectedFile(selectedFile => ({
+                      activeFile: file.name,
+                      type: file.type,
+                      contentFile:
+                        file.type === "md"
+                          ? file.name
+                          : selectedFile.contentFile,
+                    }))
+                  }>
+                  <File className="h-4 w-4" />
+                  {/* {file.name.length > 12
                     ? file.name.slice(0, 12) + "..."
                     : file.name} */}
-                    {file.name}
-                  </li>
-                </ContextMenuTrigger>
-                <ContextMenuContent>
-                  <ContextMenuItem
+                  {file.name}
+                  <DropdownMenuTrigger className="ml-auto invisible group-hover/file:visible group-active:visible">
+                    <DotsVerticalIcon />
+                  </DropdownMenuTrigger>
+                </li>
+
+                <DropdownMenuContent>
+                  <DropdownMenuItem
                     className="flex text-sm cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-accent hover:outline-none"
                     onClick={handleRenameFileClick}>
                     Rename
-                  </ContextMenuItem>
-                  <ContextMenuItem
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
                     className="flex text-sm cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-accent hover:outline-none"
                     onClick={handleDeleteFileClick}>
                     Delete
-                  </ContextMenuItem>
-                </ContextMenuContent>
-              </ContextMenu>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ))}
           </ul>
         </CollapsibleContent>
