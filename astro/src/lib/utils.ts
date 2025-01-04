@@ -12,27 +12,29 @@ export async function isBlobUrlValid(blobUrl: string): Promise<boolean> {
     const response = await fetch(blobUrl)
     return response.ok
   } catch (error) {
+    console.error("Blob URL not valid: ", blobUrl)
     return false
   }
 }
 
 export const getValidBlobUrl = async (
-  fileName: string,
+  id: number,
   url: string,
   execute: Execute
 ) => {
   const isValid = await isBlobUrlValid(url)
   if (!isValid) {
-    const asset = await loadAssetFromIndexedDB(fileName)
+    const asset = await loadAssetFromIndexedDB(id)
     const blob = new Blob([asset], { type: "image/jpeg" })
     const url = URL.createObjectURL(blob)
     const query = `
-  UPDATE files
-  SET content = ?
-  WHERE name = ?
-  AND type = ?;
-  `
-    execute(query, [url, fileName, "asset"])
+      UPDATE files
+      SET content = ?
+      WHERE name = ?
+      AND model_id = 6;
+      `
+    execute(query, [url, id])
+    return url
   }
   return url
 }

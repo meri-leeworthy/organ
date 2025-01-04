@@ -4,7 +4,7 @@ import {
   headingMap,
   type Collection,
   type FileData,
-  type SelectedFile,
+  type SelectedFiles,
 } from "../lib/types"
 import {
   Collapsible,
@@ -30,12 +30,12 @@ import { DotsVerticalIcon } from "@radix-ui/react-icons"
 
 export function FileList({
   type,
-  selectedFile,
-  setSelectedFile,
+  selectedFiles,
+  setSelectedFiles,
 }: {
   type: Collection
-  selectedFile: SelectedFile
-  setSelectedFile: React.Dispatch<React.SetStateAction<SelectedFile>>
+  selectedFiles: SelectedFiles
+  setSelectedFiles: React.Dispatch<React.SetStateAction<SelectedFiles>>
 }) {
   const [isOpen, setIsOpen] = useState<boolean>(true)
   const [files, setFiles] = useState<FileData[]>([])
@@ -47,16 +47,18 @@ export function FileList({
     if (!schemaInitialized || loading || error) return
     const fetchData = async () => {
       try {
-        const queryMap = {
-          template: "SELECT * FROM files WHERE type IN ('hbs');",
-          content: "SELECT * FROM files WHERE type = 'md';",
-          asset: "SELECT * FROM files WHERE type = 'asset';",
-          css: "SELECT * FROM files WHERE type = 'css';",
+        const query = `
+          SELECT files.id, files.name, files.content, models.name AS type
+            FROM files
+            JOIN models ON files.model_id = models.id
+            WHERE models.name = '${type}';
+        `
+        if (!query) {
+          throw new Error(`Unknown type: ${type}`)
         }
-
-        const query = queryMap[type]
         const result = execute(query)
         const files = result.map((file: ParamsObject) => ({
+          id: file.id as number,
           name: file.name?.toString() || "",
           content: file.content?.toString() || "",
           type: file.type?.toString() as FileData["type"],
@@ -69,14 +71,13 @@ export function FileList({
     }
 
     fetchData()
-  }, [execute, loading, error, schemaInitialized, selectedFile])
+  }, [execute, loading, error, schemaInitialized, selectedFiles])
 
   if (loading || !schemaInitialized) return <div>Loading...</div>
   if (error) return <div>Error: {error.message}</div>
 
   const handleAddFile = (type: Collection) => {
     if (!schemaInitialized || loading || error) return
-    const fileExtension = type === "template" ? "hbs" : "md"
 
     // Function to generate unique filename
     const generateUniqueFileName = (baseName: string, files: FileData[]) => {
@@ -94,13 +95,30 @@ export function FileList({
 
     const newFileName = generateUniqueFileName("untitled", files)
 
+    // Retrieve model IDs for inserting files
+    const modelResult = execute(`SELECT id FROM models WHERE name = ?;`, [type])
+
+    console.log("Result from SQL.js:", modelResult)
+    if (
+      !modelResult ||
+      !Array.isArray(modelResult) ||
+      modelResult.length === 0
+    ) {
+      throw new Error(`Model '${type}' not found.`)
+    }
+    console.log(modelResult[0])
+    const modelId = modelResult[0]["id"] as number
+
     execute(
-      "INSERT OR IGNORE INTO files (name, type, content) VALUES (?, ?, ?);",
-      [newFileName, fileExtension, ""]
+      "INSERT OR IGNORE INTO files (name, model_id, content, data) VALUES (?, ?, ?, ?);",
+      [newFileName, modelId, "", JSON.stringify({ template: 2, title: "" })]
     )
+    const result = execute("SELECT last_insert_rowid() as id;")
+
+    console.log("insert result", result)
     setFiles([
       ...files,
-      { name: newFileName, type: fileExtension, content: "" },
+      { id: result[0].id as number, name: newFileName, type, content: "" },
     ])
   }
 
@@ -111,19 +129,37 @@ export function FileList({
 
     const uploadExtensionMap = {
       template: ".html,.htm,.hbs",
-      content: ".md",
-      css: ".css",
+      partial: ".html,.htm,.hbsp",
+      page: ".md",
+      post: ".md",
+      style: ".css",
       asset: "*",
-    }
+    } as const
     input.accept = uploadExtensionMap[type]
 
-    const normalizedType = extensionMap[type]
+    // const normalizedType = extensionMap[type]
     input.onchange = async (e: Event) => {
       const file = (e.target as HTMLInputElement).files?.[0]
       if (file) {
         const content =
           type === "asset" ? await file.arrayBuffer() : await file.text()
         const newFile = { name: file.name, content }
+
+        // Retrieve model IDs for inserting files
+        const modelResult = execute(`SELECT id FROM models WHERE name = ?;`, [
+          type,
+        ])
+
+        console.log("Result from SQL.js:", modelResult)
+        if (
+          !modelResult ||
+          !Array.isArray(modelResult) ||
+          modelResult.length === 0
+        ) {
+          throw new Error(`Model '${type}' not found.`)
+        }
+        console.log(modelResult[0])
+        const modelId = modelResult[0]["id"] as number
 
         if (
           type === "asset" &&
@@ -134,27 +170,35 @@ export function FileList({
           )
 
           execute(
-            "INSERT OR IGNORE INTO files (name, type, content) VALUES (?, ?, ?);",
-            [file.name, normalizedType, url]
+            "INSERT OR IGNORE INTO files (name, model_id, content, data) VALUES (?, ?, ?, ?);",
+            [file.name, modelId, url, JSON.stringify({})]
           )
         } else {
           execute(
-            "INSERT OR IGNORE INTO files (name, type, content) VALUES (?, ?, ?);",
-            [file.name, normalizedType, content as string]
+            "INSERT OR IGNORE INTO files (name, model_id, content, data) VALUES (?, ?, ?, ?);",
+            [
+              file.name,
+              modelId,
+              content as string,
+              JSON.stringify({ template: 2, title: "" }),
+            ]
           )
         }
 
+        const result = execute("SELECT last_insert_rowid() as id;")
+
         setFiles([...files, newFile] as FileData<string>[])
-        setSelectedFile({
-          activeFile: file.name,
-          type: normalizedType,
-          contentFile:
-            type === "content" ? file.name : selectedFile.contentFile,
+        setSelectedFiles({
+          activeFileId: result[0].id as number,
+          contentFileId:
+            type === "page"
+              ? (result[0].id as number)
+              : selectedFiles.contentFileId,
         })
 
         // insert into IndexedDB
         if (type === "asset") {
-          saveAssetToIndexedDB(file.name, new Blob([content]))
+          saveAssetToIndexedDB(result[0].id as number, new Blob([content]))
         }
       }
     }
@@ -166,54 +210,46 @@ export function FileList({
     setContextMenuFile(fileName) // Store the clicked file's name
   }
 
-  const handleRenameFile = (oldName: string, newName: string) => {
+  const handleRenameFile = (id: number, newName: string) => {
     if (!schemaInitialized || loading || error) return
-    execute("UPDATE files SET name = ? WHERE name = ?;", [newName, oldName])
+    execute("UPDATE files SET name = ? WHERE id = ?;", [newName, id])
     setFiles(files =>
-      files.map(file =>
-        file.name === oldName ? { ...file, name: newName } : file
-      )
+      files.map(file => (file.id === id ? { ...file, name: newName } : file))
     )
-    if (selectedFile.activeFile === oldName) {
-      setSelectedFile(selectedFile => ({
-        activeFile: newName,
-        type: selectedFile.type,
-        contentFile: selectedFile.contentFile,
-      }))
-    }
   }
 
-  const handleRenameFileClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleRenameFileClick = (id: number) => {
     const newName = prompt("Enter new name:", contextMenuFile as string)
     if (newName) {
-      handleRenameFile(contextMenuFile as string, newName)
+      handleRenameFile(id, newName)
     }
   }
 
-  const handleDeleteFile = (fileName: string) => {
+  const handleDeleteFile = (fileId: number) => {
     if (!schemaInitialized || loading || error) return
 
-    const extension = extensionMap[type]
-    execute("DELETE FROM files WHERE name = ? AND type = ?;", [
-      fileName,
-      extension,
-    ])
-    setFiles(files => files.filter(file => file.name !== fileName))
-    if (selectedFile.activeFile === fileName) {
-      setSelectedFile(selectedFile => ({
-        activeFile: "",
-        type: selectedFile.type,
-        contentFile: selectedFile.contentFile,
+    execute(
+      `
+      DELETE FROM files
+      WHERE id = ?
+      `,
+      [fileId, type]
+    )
+    setFiles(files => files.filter(file => file.id !== fileId))
+    if (selectedFiles.activeFileId === fileId) {
+      setSelectedFiles(selectedFiles => ({
+        activeFileId: 0,
+        contentFileId: 0,
       }))
     }
     if (type === "asset") {
-      deleteAssetFromIndexedDB(fileName)
+      deleteAssetFromIndexedDB(fileId)
     }
   }
 
-  const handleDeleteFileClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleDeleteFileClick = (id: number) => {
     if (confirm(`Are you sure you want to delete ${contextMenuFile}?`)) {
-      handleDeleteFile(contextMenuFile as string)
+      handleDeleteFile(id)
     }
   }
 
@@ -249,30 +285,31 @@ export function FileList({
         <CollapsibleContent>
           <ul className="">
             {files.map(file => (
-              <DropdownMenu key={file.name}>
+              <DropdownMenu key={file.id}>
                 <li
                   onContextMenu={handleContextMenu}
                   className={`group/file flex cursor-pointer items-center gap-2 rounded p-2 ${
-                    selectedFile.activeFile === file.name &&
-                    selectedFile.type === file.type
+                    selectedFiles.activeFileId === file.id
                       ? "bg-accent"
                       : "hover:bg-accent/50"
                   }`}
-                  onClick={() =>
-                    setSelectedFile(selectedFile => ({
-                      activeFile: file.name,
-                      type: file.type,
-                      contentFile:
-                        file.type === "md"
-                          ? file.name
-                          : selectedFile.contentFile,
+                  onClick={() => {
+                    console.log("selecting file", file)
+                    setSelectedFiles(selectedFiles => ({
+                      activeFileId: file.id,
+                      contentFileId:
+                        file.type === "page"
+                          ? file.id
+                          : selectedFiles.contentFileId,
                     }))
-                  }>
+                  }}>
                   <File className="h-4 w-4" />
-                  {/* {file.name.length > 12
-                    ? file.name.slice(0, 12) + "..."
-                    : file.name} */}
-                  {file.name}
+                  {(file.name.length > 16
+                    ? file.name.slice(0, 16) + "..."
+                    : file.name) +
+                    (file.type === "template" || file.type === "style"
+                      ? `.${extensionMap[file.type]}`
+                      : "")}
                   <DropdownMenuTrigger className="ml-auto invisible group-hover/file:visible group-active:visible">
                     <DotsVerticalIcon />
                   </DropdownMenuTrigger>
@@ -281,12 +318,12 @@ export function FileList({
                 <DropdownMenuContent>
                   <DropdownMenuItem
                     className="flex text-sm cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-accent hover:outline-none"
-                    onClick={handleRenameFileClick}>
+                    onClick={() => handleRenameFileClick(file.id)}>
                     Rename
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="flex text-sm cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-accent hover:outline-none"
-                    onClick={handleDeleteFileClick}>
+                    onClick={() => handleDeleteFileClick(file.id)}>
                     Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>

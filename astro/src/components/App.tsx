@@ -6,16 +6,15 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable.tsx"
 import { Preview } from "./Preview.jsx"
-import type { SelectedFile } from "../lib/types.jsx"
+import type { SelectedFiles } from "../lib/types.jsx"
 import { SidebarProvider } from "./ui/sidebar.jsx"
 import { AppSidebar } from "./AppSidebar.jsx"
 import { SelectedFileDisplay } from "./SelectedFileDisplay.jsx"
 
 const App: React.FC = () => {
-  const [selectedFile, setSelectedFile] = useState<SelectedFile>({
-    activeFile: "main",
-    type: "md",
-    contentFile: "main",
+  const [selectedFiles, setSelectedFiles] = useState<SelectedFiles>({
+    activeFileId: 1,
+    contentFileId: 1,
   })
   const [isVertical, setIsVertical] = useState(false)
   const [editTemplate, setEditTemplate] = useState(false)
@@ -43,20 +42,20 @@ const App: React.FC = () => {
           className="min-h-screen max-h-screen">
           <ResizablePanel defaultSize={50} minSize={30} className="flex">
             <AppSidebar
-              selectedFile={selectedFile}
-              setSelectedFile={setSelectedFile}
+              selectedFiles={selectedFiles}
+              setSelectedFiles={setSelectedFiles}
               editTemplate={editTemplate}
               setEditTemplate={setEditTemplate}
             />
             <div className="flex-grow h-full">
-              <SelectedFileDisplay selectedFile={selectedFile} />
+              <SelectedFileDisplay selectedFiles={selectedFiles} />
             </div>
           </ResizablePanel>
           <ResizableHandle />
           <ResizablePanel defaultSize={50}>
             <Preview
-              selectedFile={selectedFile}
-              setSelectedFile={setSelectedFile}
+              selectedFiles={selectedFiles}
+              setSelectedFiles={setSelectedFiles}
             />
           </ResizablePanel>
         </ResizablePanelGroup>

@@ -52,14 +52,14 @@ export const saveToIndexedDB = async (data: Uint8Array) => {
   }
 }
 
-export const saveAssetToIndexedDB = async (fileName: string, data: Blob) => {
+export const saveAssetToIndexedDB = async (id: number, data: Blob) => {
   try {
     const db = await openDatabase()
     const transaction = db.transaction("assets", "readwrite")
     const store = transaction.objectStore("assets")
-    store.put(data, fileName)
+    store.put(data, id)
 
-    console.log("Saved asset to IndexedDB:", fileName)
+    console.log("Saved asset to IndexedDB:", id)
 
     return new Promise<void>((resolve, reject) => {
       transaction.oncomplete = () => {
@@ -75,12 +75,12 @@ export const saveAssetToIndexedDB = async (fileName: string, data: Blob) => {
   }
 }
 
-export const loadAssetFromIndexedDB = async (fileName: string) => {
+export const loadAssetFromIndexedDB = async (id: number) => {
   try {
     const db = await openDatabase()
     const transaction = db.transaction("assets", "readonly")
     const store = transaction.objectStore("assets")
-    const request = store.get(fileName)
+    const request = store.get(id)
 
     return new Promise<Blob>((resolve, reject) => {
       request.onsuccess = () => {
@@ -96,14 +96,14 @@ export const loadAssetFromIndexedDB = async (fileName: string) => {
   }
 }
 
-export const deleteAssetFromIndexedDB = async (fileName: string) => {
+export const deleteAssetFromIndexedDB = async (id: number) => {
   try {
     const db = await openDatabase()
     const transaction = db.transaction("assets", "readwrite")
     const store = transaction.objectStore("assets")
-    store.delete(fileName)
+    store.delete(id)
 
-    console.log("Deleted asset from IndexedDB:", fileName)
+    console.log("Deleted asset from IndexedDB:", id)
 
     return new Promise<void>((resolve, reject) => {
       transaction.oncomplete = () => {

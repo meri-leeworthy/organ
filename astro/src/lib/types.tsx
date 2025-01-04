@@ -1,28 +1,35 @@
 export interface FileData<T = string> {
+  id: number
   name: string
   content: T
-  type: "css" | "hbs" | "hbsp" | "md" | "asset"
+  type: Collection
   data?: Record<string, string>
 }
 
-export interface SelectedFile {
-  activeFile: string
-  type: "css" | "hbs" | "hbsp" | "md" | "asset"
-  contentFile: string
+export interface SelectedFiles {
+  activeFileId: number
+  contentFileId: number
 }
 
-export type Collection = "template" | "content" | "asset" | "css"
+export type Collection =
+  | "template"
+  | "page"
+  | "asset"
+  | "style"
+  | "partial"
+  | "post"
 
 export const extensionMap = {
   template: "hbs",
-  content: "md",
-  asset: "asset",
-  css: "css",
+  partial: "hbsp",
+  style: "css",
 } as const
 
 export const headingMap = {
   template: "Templates",
-  content: "Content",
-  css: "CSS",
+  page: "Content",
+  style: "Styles",
   asset: "Assets",
+  partial: "Partials",
+  post: "Posts",
 } as const

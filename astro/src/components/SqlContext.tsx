@@ -15,7 +15,11 @@ interface ExtendedUseSqlResult extends UseSqlResult {
   schemaInitialized: boolean
 }
 
-const defaultCss = `h1 {
+const defaultCss = `* {
+  font-family: sans-serif;
+}
+
+h1 {
   font-size: 2rem;
   font-weight: bold;
  }
@@ -23,23 +27,29 @@ const defaultCss = `h1 {
 h2 {
   font-size: 1.5rem;
   font-weight: bold;
+}
+  
+img {
+  width: 80%;
 }`
 
-const defaultHbs = `<style>{{{css}}}</style>
+const defaultHbs = `<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<style>{{{styles-css}}}</style>
+<title>{{title}}</title>
+</head>
+
+<body>
 <div class="preview-pane">
-  <h1>{{heading}}</h1>
+  <h1>{{title}}</h1>
   {{{content}}}
-            
-  {{#if show_footer}}
-  <footer>
-    <p>{{footer_text}}</p>
-  </footer>
-  {{/if}}
-</div>`
+</div>
+</body>
+</html>`
 
-const defaultMd = `# Welcome to My Document
-
-This is a sample Markdown file.`
+const defaultMd = `This is a sample **Markdown** file.`
 
 const SqlContext = createContext<ExtendedUseSqlResult | undefined>(undefined)
 
@@ -58,9 +68,10 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
             is_system BOOLEAN NOT NULL DEFAULT FALSE,
-            schema JSON NOT NULL,
+            schema TEXT NOT NULL DEFAULT '{}' CHECK (json_valid(schema)),
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            CHECK (json_valid(schema))
             );`,
           },
 
@@ -76,9 +87,13 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
 
           // Insert default models for 'pages' and 'posts'
           {
-            query: `INSERT OR IGNORE INTO models (name, is_system, schema) VALUES
-            ('pages', TRUE, '{"fields": [{"name": "template", "type": "text"}, {"name": "title", "type": "string"}]}'),
-            ('posts', TRUE, '{"fields": [{"name": "template", "type": "text"}, {"name": "title", "type": "string"}, {"name": "date", "type": "date"}, {"name": "tags", "type": "array"}]}');`,
+            query: `INSERT OR IGNORE INTO models (id, name, is_system, schema) VALUES
+            (1, 'page', TRUE, '{"fields": [{"name": "template", "type": "number", "required": true}, {"name": "title", "type": "string", "required": true}]}'),
+            (2, 'post', TRUE, '{"fields": [{"name": "template", "type": "number", "required": true}, {"name": "title", "type": "string", "required": true}, {"name": "date", "type": "date", "required": true}, {"name": "tags", "type": "array"}]}'),
+            (3, 'style', TRUE, '{"fields": []}'),
+            (4, 'template', TRUE, '{"fields": []}'),
+            (5, 'partial', TRUE, '{"fields": []}'),
+            (6, 'asset', TRUE, '{"fields": [{"name": "metadata", "type": "json"}]}');`,
           },
 
           // Create the 'files' table
@@ -86,24 +101,20 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
             query: `CREATE TABLE IF NOT EXISTS files (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            type TEXT NOT NULL CHECK (type IN ('css', 'hbs', 'hbsp', 'md', 'asset')),
+            model_id INTEGER NOT NULL,
             content TEXT,
-            data TEXT NOT NULL DEFAULT '{}',
+            data TEXT NOT NULL DEFAULT '{}' CHECK (json_valid(data)),
             file_path TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(name, type)
-          );`,
-          },
-
-          // Create a partial unique index for 'type' = 'css'
-          {
-            query: `CREATE UNIQUE INDEX IF NOT EXISTS unique_type_css ON files(type) WHERE type = 'css';`,
+            UNIQUE(name, model_id)
+            FOREIGN KEY(model_id) REFERENCES models(id) ON DELETE CASCADE
+            );`,
           },
 
           // Create indexes for performance optimization
           {
-            query: `CREATE INDEX IF NOT EXISTS idx_files_type ON files(type);`,
+            query: `CREATE INDEX IF NOT EXISTS idx_files_type ON files(model_id);`,
           },
           {
             query: `CREATE INDEX IF NOT EXISTS idx_files_name ON files(name);`,
@@ -118,24 +129,6 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
               UPDATE files SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
             END;`,
           },
-
-          // Insert test file: styles.css
-          {
-            query: `INSERT OR IGNORE INTO files (name, type, content) VALUES (?, ?, ?);`,
-            params: ["styles", "css", defaultCss],
-          },
-
-          // Insert test file: index.hbs
-          {
-            query: `INSERT OR IGNORE INTO files (name, type, content) VALUES (?, ?, ?);`,
-            params: ["index", "hbs", defaultHbs],
-          },
-
-          // Insert test file: main.md
-          {
-            query: `INSERT OR IGNORE INTO files (name, type, content) VALUES (?, ?, ?);`,
-            params: ["main", "md", defaultMd],
-          },
         ]
 
         try {
@@ -144,10 +137,58 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
           console.log("Transaction started.")
 
           // Execute each SQL statement sequentially
-          for (const { query, params } of queries) {
-            sql.execute(query, params)
+          for (const { query } of queries) {
+            sql.execute(query)
             console.log(
               `Executed query: ${query.split("\n")[0].slice(0, 50)}...`
+            )
+          }
+
+          // Retrieve model IDs for inserting files
+          const models = ["style", "template", "page"]
+          const modelIds: { [key: string]: number } = {}
+          models.forEach(model => {
+            const result = sql.execute(
+              `SELECT id FROM models WHERE name = ?;`,
+              [model]
+            )
+
+            console.log("Result from SQL.js:", result)
+            if (result && Array.isArray(result) && result.length > 0) {
+              modelIds[model] = (result as any)[0]["id"] as number // sue me
+            } else {
+              throw new Error(`Model '${model}' not found.`)
+            }
+          })
+
+          // Insert test files with corresponding model_id
+          const fileQueries = [
+            {
+              query: `INSERT OR IGNORE INTO files (name, model_id, content, data) VALUES (?, ?, ?, ?);`,
+              params: [
+                "main",
+                modelIds["page"],
+                defaultMd,
+                JSON.stringify({
+                  template: 2,
+                  title: "Hello, Organ Static!",
+                }),
+              ],
+            },
+            {
+              query: `INSERT OR IGNORE INTO files (name, model_id, content) VALUES (?, ?, ?);`,
+              params: ["index", modelIds["template"], defaultHbs],
+            },
+            {
+              query: `INSERT OR IGNORE INTO files (name, model_id, content) VALUES (?, ?, ?);`,
+              params: ["styles", modelIds["style"], defaultCss],
+            },
+          ]
+
+          for (const { query, params } of fileQueries) {
+            sql.execute(query, params)
+            console.log(
+              `Executed file insert: ${query.split("\n")[0].slice(0, 50)}...`
             )
           }
 

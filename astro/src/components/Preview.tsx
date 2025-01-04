@@ -1,19 +1,22 @@
 import { useEffect, useRef, useState } from "react"
 import { useSqlContext } from "./SqlContext"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert.jsx"
-import type { FileData, SelectedFile } from "../lib/types.jsx"
+import type { Collection, FileData, SelectedFiles } from "../lib/types.jsx"
 import type { ParamsObject } from "sql.js"
 import { useDebounce } from "@/hooks/useDebounce.js"
 import { getValidBlobUrl } from "@/lib/utils.js"
 
-type Context = Record<string, { content: string; data: string }>
+type Context = Record<
+  string,
+  { name: string; content: string; file_type: Collection; data: string }
+>
 
 export const Preview = ({
-  selectedFile,
-  setSelectedFile,
+  selectedFiles,
+  setSelectedFiles,
 }: {
-  selectedFile: SelectedFile
-  setSelectedFile: React.Dispatch<React.SetStateAction<SelectedFile>>
+  selectedFiles: SelectedFiles
+  setSelectedFiles: React.Dispatch<React.SetStateAction<SelectedFiles>>
 }) => {
   // essentially all files need to be loaded from the database
   // and then passed to the WASM module. i wonder what memoisation etc i could use
@@ -23,7 +26,7 @@ export const Preview = ({
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
   const { execute, loading, error, schemaInitialized } = useSqlContext()
-  const [files, setFiles] = useState<FileData[]>([])
+  const [files, setFiles] = useState<Map<number, FileData>>(new Map())
   const [errorMessage, setErrorMessage] = useState<string>("")
   const [refresh, setRefresh] = useState<number>(0)
   const debouncedRefresh = useDebounce(refresh, 50)
@@ -32,12 +35,12 @@ export const Preview = ({
   )
   const [wasmModule, setWasmModule] = useState<{
     render: (
-      current_filename: string,
-      context: Context,
-      css: string,
-      class_name: string,
-      partials: Record<string, string>,
-      images: Record<string, string>
+      current_file_id: number,
+      context: Context
+      // css: string,
+      // class_name: string,
+      // partials: Record<string, string>,
+      // images: Record<string, string>
     ) => string
   } | null>(null)
 
@@ -61,23 +64,48 @@ export const Preview = ({
     if (!schemaInitialized || loading || error) return
     const fetchData = async () => {
       try {
-        const query = "SELECT * FROM files;"
+        const query =
+          "SELECT files.id, files.name, files.content, files.data, models.name as type FROM files JOIN models ON files.model_id = models.id;"
         const result = execute(query)
-        const files = result.map((file: ParamsObject) => ({
-          name: file.name?.toString() || "",
-          content: file.content?.toString() || "",
-          type: file.type?.toString() as FileData["type"],
-          data: JSON.parse(file.data?.toString() || "{}"),
-        }))
         console.log("Preview.tsx: Result from SQL.js:", result)
-        setFiles(files)
+        const files = result.map(
+          (file: ParamsObject) =>
+            [
+              file.id as number,
+              {
+                id: file.id as number,
+                name: file.name?.toString() || "",
+                content: file.content?.toString() || "",
+                type: file.type?.toString() as FileData["type"],
+                data: JSON.parse(file.data?.toString() || "{}"),
+              },
+            ] as const
+        )
 
-        const assets = files.filter(file => file.type === "asset")
-        await Promise.all(
+        const filesMap = new Map(files)
+
+        console.log("Getting Blob URLs")
+        const assets = files.filter(file => file[1].type === "asset")
+        const updatedAssetsArray = await Promise.all(
           assets.map(async asset => {
-            await getValidBlobUrl(asset.name, asset.content, execute)
+            const url = await getValidBlobUrl(
+              asset[1].id,
+              asset[1].content,
+              execute
+            )
+            console.log("valid url: ", url)
+            return {
+              ...asset[1],
+              content: url,
+            }
           })
         )
+
+        updatedAssetsArray.forEach(asset => {
+          filesMap.set(asset.id, asset)
+        })
+
+        setFiles(filesMap)
       } catch (err) {
         console.error("Error fetching data:", err)
       }
@@ -89,7 +117,7 @@ export const Preview = ({
     loading,
     error,
     schemaInitialized,
-    selectedFile,
+    selectedFiles,
     debouncedRefresh,
   ])
 
@@ -138,46 +166,27 @@ export const Preview = ({
       return
     }
 
-    const partialFiles = files.filter(
-      file => file.type === "hbs" && file.name !== "index"
-    )
-    const cssFile = files.find(file => file.type === "css")
-    const assets = files.filter(file => file.type === "asset")
-    const imageURLs: Record<string, string> = {}
-    for (const asset of assets) {
-      // Adjust the MIME type based on your requirements
-      imageURLs[asset.name] = asset.content
-    }
-
-    const cssContent = cssFile ? cssFile.content : ""
-    const partials: Record<string, string> = {}
-    for (const partial of partialFiles) {
-      partials[partial.name] = partial.content
-    }
-
     const context: Context = {}
     files.forEach(file => {
-      context[file.name] = {
+      context[file.id] = {
+        name: file.name,
         content: file.content,
-        data: JSON.stringify(file.data), // the actual file data should be stored in the DB
+        file_type: file.type,
+        data: JSON.stringify(file.data),
       }
     })
 
     // console.log("Selected file:", selectedFile)
-    // console.log("Context:", context)
+    console.log("Context:", context)
 
     try {
       // Pass imageURLs as a JSON string or appropriate format
       const combinedContent = wasmModule.render(
-        selectedFile.contentFile,
-        context,
-        cssContent,
-        ".preview-pane",
-        partials, // existing partials
-        imageURLs // new parameter for image mapping
+        selectedFiles.contentFileId,
+        context
       )
 
-      // console.log("Conversion result:", combinedContent)
+      console.log("Conversion result:", combinedContent)
       setPreviewContent(combinedContent)
       setErrorMessage("")
     } catch (e) {
@@ -185,57 +194,48 @@ export const Preview = ({
       setPreviewContent("")
       setErrorMessage(String(e))
     }
-  }, [selectedFile, wasmModule, files, loading, debouncedRefresh]) //,
+  }, [selectedFiles, wasmModule, files, loading, debouncedRefresh]) //,
 
+  // re-render on keypresses
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       setRefresh(refresh => refresh + 1) // Trigger rerender by updating state
     }
 
+    const handleClick = (event: MouseEvent) => {
+      setRefresh(refresh => refresh + 1)
+    }
+
     window.addEventListener("keydown", handleKeyDown)
+    window.addEventListener("click", handleClick)
 
     // Clean up the event listener on component unmount
     return () => {
       window.removeEventListener("keydown", handleKeyDown)
+      window.removeEventListener("click", handleClick)
     }
   }, [])
 
-  // const handleLinkClick = (event: React.MouseEvent<HTMLDivElement>) => {
-  //   event.preventDefault()
-  //   let target = event.target as HTMLElement | null
-
-  //   while (target && target !== event.currentTarget) {
-  //     console.log("Target:", target)
-  //     if (target.tagName.toLowerCase() === "a") {
-  //       const href = (target as HTMLAnchorElement).getAttribute("href")
-  //       console.log("Link href:", href)
-  //       if (href) {
-  //         const isInternal = href.startsWith("/")
-
-  //         if (isInternal) {
-  //           if (onLinkClick) {
-  //             onLinkClick(href)
-  //           }
-  //         } else {
-  //           // Optionally handle external links, e.g., open in new tab
-  //           // event.preventDefault();
-  //           // window.open(href, '_blank');
-  //         }
-  //       }
-  //       break
-  //     }
-  //     target = target.parentElement
-  //   }
-  // }
-
   // Handler to set the active file
   const onLinkClick = (href: string) => {
-    setSelectedFile({
-      activeFile: href.slice(1),
-      type: "md",
-      contentFile: href.slice(1),
+    //get the id of the new file
+    const newFileId = [...files.values()].find(
+      file => file.name === href.slice(1)
+    )?.id
+    if (!newFileId) {
+      console.error("File not found:", href)
+      return
+    }
+    setSelectedFiles({
+      activeFileId: newFileId,
+      contentFileId: newFileId,
     })
     // setSelectedContent(href.slice(1))
+  }
+
+  // Function to handle link clicks inside the iframe
+  interface IframeClickEvent extends Event {
+    target: HTMLElement
   }
 
   const handleIframeClick = (event: MouseEvent) => {
