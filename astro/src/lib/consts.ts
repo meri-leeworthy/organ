@@ -8,4 +8,4 @@ export const MODEL_IDS = {
   template: 4,
   partial: 5,
   asset: 6,
-}
+} as const

@@ -1,10 +1,8 @@
 import { useSqlContext } from "./SqlContext"
 import { type Collection, type FileData } from "../lib/types"
-import { AutoResizeTextarea, Textarea } from "./ui/textarea"
+import { AutoResizeTextarea } from "./ui/textarea"
 import { useBlobStore } from "./BlobStoreContext"
-import { Form, FormControl, FormField } from "./ui/form"
 import { Label } from "./ui/label"
-import { useForm } from "react-hook-form"
 import {
   Select,
   SelectValue,
@@ -46,14 +44,9 @@ export const SelectedFileDisplay = ({
   if (!file) return null
 
   const blobStore = useBlobStore()
-  const form = useForm()
-
   const client = useClient()
-
   const { render } = useRender()
   const { execute, loading, error, schemaInitialized } = useSqlContext()
-
-  console.log("schema", schema)
 
   const handlePublishFile = async () => {
     if (!schemaInitialized || loading || error) return
@@ -114,7 +107,6 @@ export const SelectedFileDisplay = ({
       const query =
         "SELECT file.id, file.name, file.data, file.url, model.name as type FROM file JOIN model ON file.model_id = model.id;"
       const result = execute(query)
-      // console.log("Preview.tsx: Result from SQL.js:", result)
       const files = result.map((file: ParamsObject): [number, FileData] => [
         file.id as number,
         {
@@ -146,25 +138,14 @@ export const SelectedFileDisplay = ({
     }
   }
 
-  const handleDataChange = (formData: Record<string, any>) => {
-    console.log("form data", formData)
-    // console.log("Editor data", editor?.getHTML())
-
+  const handleDataChange = (fieldName: string, value: any) => {
     const newData = { ...file.data }
-    for (const field of schema.fields) {
-      if (field.required && formData[field.name] === undefined) {
-        console.error(`Field ${field.name} is required but not provided`)
-        return
-      }
-      newData[field.name] = formData[field.name]
-      if (field.name === "body") {
-        newData.body = { type: "html", content: formData.body }
-      }
+
+    if (fieldName === "body") {
+      newData.body = { type: "html", content: value }
+    } else {
+      newData[fieldName] = value
     }
-
-    setFile(file => ({ ...file, newData }))
-
-    console.log("newData", newData)
 
     const query = `
     UPDATE file
@@ -173,7 +154,7 @@ export const SelectedFileDisplay = ({
     `
     try {
       execute(query, [JSON.stringify(newData), file.id])
-      setFile(file => ({ ...file, newData }))
+      setFile({ ...file, data: newData })
     } catch (err) {
       console.error("Error updating data:", err)
     }
@@ -189,12 +170,7 @@ export const SelectedFileDisplay = ({
           <Editor
             key={file.id}
             file={file}
-            onChange={html => {
-              handleDataChange({
-                ...form.getValues(),
-                body: html,
-              })
-            }}
+            onChange={html => handleDataChange("body", html)}
           />
         </div>
       )
@@ -211,129 +187,101 @@ export const SelectedFileDisplay = ({
 
   const renderField = (field: Field) => {
     if (!file.data) return null
-    const defaultValue = file.data[field.name] || ""
+    const value =
+      field.name === "body" ? file.data?.body?.content : file.data[field.name]
+
     if (field.name === "template") {
       return (
-        <FormField
-          name={"template"}
-          control={form.control}
-          defaultValue={defaultValue.toString()}
-          render={({ field: controlledField }) => (
-            <Select
-              name="Template"
-              onValueChange={controlledField.onChange}
-              defaultValue={controlledField.value}>
-              <FormControl>
-                <SelectTrigger className="">
-                  <SelectValue />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {[...templates.entries()].map(template => (
-                  <SelectItem
-                    key={template[0]}
-                    value={template[0].toString()}
-                    textValue={template[1]}>
-                    {template[1]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        />
+        <Select
+          value={value?.toString()}
+          onValueChange={value => handleDataChange(field.name, value)}>
+          <SelectTrigger className="">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {[...templates.entries()].map(template => (
+              <SelectItem
+                key={template[0]}
+                value={template[0].toString()}
+                textValue={template[1]}>
+                {template[1]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )
     }
 
     switch (field.type) {
       case "string":
         return (
-          <FormField
-            name={field.name}
-            control={form.control}
-            defaultValue={file.data[field.name]}
-            render={({ field }) => <Input {...field} />}
+          <Input
+            value={value || ""}
+            onChange={e => handleDataChange(field.name, e.target.value)}
           />
         )
       case "number":
         return (
-          <FormField
-            name={field.name}
-            control={form.control}
-            defaultValue={file.data[field.name]}
-            render={({ field }) => <Input {...field} />}
+          <Input
+            type="number"
+            value={value || ""}
+            onChange={e => handleDataChange(field.name, e.target.value)}
           />
         )
       case "date":
         return (
-          <FormField
-            name={field.name}
-            control={form.control}
-            defaultValue={file.data[field.name]}
-            render={({ field }) => <Input type="date" {...field} />}
+          <Input
+            type="date"
+            value={value || ""}
+            onChange={e => handleDataChange(field.name, e.target.value)}
           />
         )
       case "array":
         return (
-          <FormField
-            name={field.name}
-            control={form.control}
-            defaultValue={file.data[field.name]}
-            render={({ field: controlledField }) => (
-              <div className="space-y-2">
-                {controlledField.value.map((item: string, index: number) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <Input
-                      value={item}
-                      onChange={e => {
-                        const newValue = [...controlledField.value]
-                        newValue[index] = e.target.value
-                        controlledField.onChange(newValue)
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const newValue = controlledField.value.filter(
-                          (_: string, i: number) => i !== index
-                        )
-                        controlledField.onChange(newValue)
-                      }}>
-                      Remove
-                    </Button>
-                  </div>
-                ))}
+          <div className="space-y-2">
+            {(value || []).map((item: string, index: number) => (
+              <div key={index} className="flex items-center space-x-2">
+                <Input
+                  value={item}
+                  onChange={e => {
+                    const newValue = [...value]
+                    newValue[index] = e.target.value
+                    handleDataChange(field.name, newValue)
+                  }}
+                />
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() =>
-                    controlledField.onChange([...controlledField.value, ""])
-                  }>
-                  Add Item
+                  onClick={() => {
+                    const newValue = value.filter(
+                      (_: string, i: number) => i !== index
+                    )
+                    handleDataChange(field.name, newValue)
+                  }}>
+                  Remove
                 </Button>
               </div>
-            )}
-          />
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                handleDataChange(field.name, [...(value || []), ""])
+              }>
+              Add Item
+            </Button>
+          </div>
         )
       case "plaintext":
         return (
-          <FormField
-            name={field.name}
-            control={form.control}
-            render={({ field: controlledField }) => (
-              <AutoResizeTextarea
-                key={file.id}
-                {...controlledField}
-                className="flex-grow h-20 font-mono resize-none"
-                placeholder="Enter your content here..."
-                value={file.data?.body?.content || ""}
-                onInput={e => {
-                  controlledField.onChange(e.currentTarget.value)
-                }}
-              />
-            )}
+          <AutoResizeTextarea
+            key={file.id}
+            className="flex-grow h-20 font-mono resize-none"
+            placeholder="Enter your content here..."
+            value={value || ""}
+            onChange={e => handleDataChange(field.name, e.target.value)}
           />
         )
       default:
@@ -341,9 +289,6 @@ export const SelectedFileDisplay = ({
     }
   }
 
-  // with the controlled form inputs, the first time the form is rendered they can get stuck with
-  // whatever values they are given at that point. So this basically is here to make sure there is data
-  // to render.
   if (templates.size === 0) {
     console.error("No templates found")
     return null
@@ -370,13 +315,9 @@ export const SelectedFileDisplay = ({
             <img src={file.blob_url} alt="Selected Asset" />
           </div>
         ) : (
-          <Form {...form}>
-            <form
-              onChange={form.handleSubmit(handleDataChange)}
-              className="flex flex-col h-full mb-2 space-y-2">
-              {schema.fields.map(renderFieldWithLabel)}
-            </form>
-          </Form>
+          <div className="flex flex-col h-full mb-2 space-y-2">
+            {schema.fields.map(renderFieldWithLabel)}
+          </div>
         )}
       </Card>
     </div>

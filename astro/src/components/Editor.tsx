@@ -7,17 +7,33 @@ import Text from "@tiptap/extension-text"
 import Bold from "@tiptap/extension-bold"
 import Italic from "@tiptap/extension-italic"
 import Underline from "@tiptap/extension-underline"
+import Image from "@tiptap/extension-image"
+import Link from "@tiptap/extension-link"
+import Dropcursor from "@tiptap/extension-dropcursor"
 // import Heading from "@tiptap/extension-heading"
 import {
   Bold as BoldIcon,
+  ImageIcon,
   Italic as ItalicIcon,
   Underline as UnderlineIcon,
   // Heading as HeadingIcon,
 } from "lucide-react"
-
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-
-const extensions = [Document, Paragraph, Text, Bold, Italic, Underline]
+import { Button } from "./ui/button"
+import { DropdownMenu, DropdownMenuTrigger } from "./ui/dropdown-menu"
+import { ImageSelector } from "./ImageSelector"
+import { useCallback } from "react"
+const extensions = [
+  Document,
+  Paragraph,
+  Text,
+  Bold,
+  Italic,
+  Underline,
+  Dropcursor,
+  Image,
+  Link,
+]
 
 export function EditorComponent({
   file,
@@ -41,7 +57,7 @@ export function EditorComponent({
     },
   })
 
-  console.log("Current file", file)
+  // console.log("Current file", file)
 
   if (!editor) return null
 
@@ -59,25 +75,35 @@ export function EditorComponent({
 
 export function Toolbar({ editor }: { editor: Editor }) {
   return (
-    <ToggleGroup type="multiple">
-      <ToggleGroupItem
-        value="bold"
-        aria-label="Toggle bold"
-        onClick={() => editor.chain().focus().toggleBold().run()}>
-        <BoldIcon className="w-4 h-4" />
-      </ToggleGroupItem>
-      <ToggleGroupItem
-        value="italic"
-        aria-label="Toggle italic"
-        onClick={() => editor.chain().focus().toggleItalic().run()}>
-        <ItalicIcon className="w-4 h-4" />
-      </ToggleGroupItem>
-      <ToggleGroupItem
-        value="strikethrough"
-        aria-label="Toggle strikethrough"
-        onClick={() => editor.chain().focus().toggleUnderline().run()}>
-        <UnderlineIcon className="w-4 h-4" />
-      </ToggleGroupItem>
-    </ToggleGroup>
+    <div className="flex flex-row gap-2 mb-2">
+      <ToggleGroup type="multiple" className="">
+        <ToggleGroupItem
+          value="bold"
+          aria-label="Toggle bold"
+          onClick={() => editor.chain().focus().toggleBold().run()}>
+          <BoldIcon className="w-4 h-4" />
+        </ToggleGroupItem>
+        <ToggleGroupItem
+          value="italic"
+          aria-label="Toggle italic"
+          onClick={() => editor.chain().focus().toggleItalic().run()}>
+          <ItalicIcon className="w-4 h-4" />
+        </ToggleGroupItem>
+        <ToggleGroupItem
+          value="strikethrough"
+          aria-label="Toggle strikethrough"
+          onClick={() => editor.chain().focus().toggleUnderline().run()}>
+          <UnderlineIcon className="w-4 h-4" />
+        </ToggleGroupItem>
+      </ToggleGroup>
+      <DropdownMenu>
+        <DropdownMenuTrigger>
+          <Button variant="ghost" size="icon">
+            <ImageIcon className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <ImageSelector editor={editor} />
+      </DropdownMenu>
+    </div>
   )
 }

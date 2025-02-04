@@ -45,14 +45,9 @@ alternatively dependencies could be stored as columns in the db
 
 the files are stored in SQLite.
 
-todo
-
-- don't store file extensions in file name, use type column in db
-
 Templating todos:
-- yaml isn't directly accessible, only through UI
-- UI for editing and creating custom models
-- every model has a relevant template
+- UI for editing and creating custom collections
+- every collection has a fixed template, per page template, or no template i.e. for items that don't need a full page
 - models would be editable in 'project settings'
 - pages (cannot be removed)
   - template*
@@ -73,11 +68,14 @@ other todos:
 - publish
 - authentication
 - payment
-- wysiwyg editor
 - keyboard shortcuts
 - can preview be an iframe?
 
-# List of bugs
+# bugs
 
 - deleting files doesn't work
-- 
+- changing the template doesn't work straight away
+  - it doesn't update when you change the template or then when you type in title
+  - it does update when you type in content or do a transaction on the editor
+- sometimes get render error - template not found in context
+- sometimes content is randomly replaced with {{{title}}} {{{content}}} ??
