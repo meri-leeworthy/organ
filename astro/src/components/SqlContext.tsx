@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react"
 import useSql, { type UseSqlResult } from "@/hooks/useSql"
+import { MODEL_IDS } from "@/lib/consts"
 
 interface SqlProviderProps {
   children: ReactNode
@@ -37,7 +38,7 @@ const defaultHbs = `<!DOCTYPE html>
 <html lang="en">
 
 <head>
-<style>{{{styles-css}}}</style>
+<link rel="stylesheet" href="style.css" />
 <title>{{title}}</title>
 </head>
 
@@ -64,7 +65,7 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
         const queries = [
           // Create the 'models' table
           {
-            query: `CREATE TABLE IF NOT EXISTS models (
+            query: `CREATE TABLE IF NOT EXISTS model (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
             is_system BOOLEAN NOT NULL DEFAULT FALSE,
@@ -77,56 +78,57 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
 
           // Create a trigger to update 'updated_at' on record updates
           {
-            query: `CREATE TRIGGER IF NOT EXISTS update_models_updated_at
-            AFTER UPDATE ON models
+            query: `CREATE TRIGGER IF NOT EXISTS update_model_updated_at
+            AFTER UPDATE ON model
             FOR EACH ROW
             BEGIN
-              UPDATE models SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+              UPDATE model SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
             END;`,
           },
 
           // Insert default models for 'pages' and 'posts'
+          // these IDs being hardcoded is reflected in the MODEL_IDS const
           {
-            query: `INSERT OR IGNORE INTO models (id, name, is_system, schema) VALUES
-            (1, 'page', TRUE, '{"fields": [{"name": "template", "type": "number", "required": true}, {"name": "title", "type": "string", "required": true}]}'),
-            (2, 'post', TRUE, '{"fields": [{"name": "template", "type": "number", "required": true}, {"name": "title", "type": "string", "required": true}, {"name": "date", "type": "date", "required": true}, {"name": "tags", "type": "array"}]}'),
-            (3, 'style', TRUE, '{"fields": []}'),
-            (4, 'template', TRUE, '{"fields": []}'),
-            (5, 'partial', TRUE, '{"fields": []}'),
-            (6, 'asset', TRUE, '{"fields": [{"name": "metadata", "type": "json"}]}');`,
+            query: `INSERT OR IGNORE INTO model (id, name, is_system, schema) VALUES
+            (1, 'page', TRUE, '{"fields": [{"name": "template", "type": "number", "required": true}, {"name": "title", "type": "string", "required": true}, {"name": "body", "type": "html", "required": true}]}'),
+            (2, 'post', TRUE, '{"fields": [{"name": "template", "type": "number", "required": true}, {"name": "title", "type": "string", "required": true}, {"name": "body", "type": "html", "required": true}, {"name": "date", "type": "date", "required": true}, {"name": "tags", "type": "array"}]}'),
+            (3, 'templateAsset', TRUE, '{"fields": [{"name": "body", "type": "plaintext"}]}'),
+            (4, 'template', TRUE, '{"fields": [{"name": "body", "type": "plaintext"}]}'),
+            (5, 'partial', TRUE, '{"fields": [{"name": "body", "type": "plaintext"}]}'),
+            (6, 'asset', TRUE, '{"fields": [{"name": "mime_type", "type": "string", "required": true}]}');`,
           },
 
           // Create the 'files' table
           {
-            query: `CREATE TABLE IF NOT EXISTS files (
+            query: `CREATE TABLE IF NOT EXISTS file (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             model_id INTEGER NOT NULL,
-            content TEXT,
             data TEXT NOT NULL DEFAULT '{}' CHECK (json_valid(data)),
             file_path TEXT,
+            url TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(name, model_id)
-            FOREIGN KEY(model_id) REFERENCES models(id) ON DELETE CASCADE
+            FOREIGN KEY(model_id) REFERENCES model(id) ON DELETE CASCADE
             );`,
           },
 
           // Create indexes for performance optimization
           {
-            query: `CREATE INDEX IF NOT EXISTS idx_files_type ON files(model_id);`,
+            query: `CREATE INDEX IF NOT EXISTS idx_file_type ON file(model_id);`,
           },
           {
-            query: `CREATE INDEX IF NOT EXISTS idx_files_name ON files(name);`,
+            query: `CREATE INDEX IF NOT EXISTS idx_file_name ON file(name);`,
           },
 
           // Create a trigger to update 'updated_at' on record updates
           {
-            query: `CREATE TRIGGER IF NOT EXISTS update_files_updated_at
-            AFTER UPDATE ON files
+            query: `CREATE TRIGGER IF NOT EXISTS update_file_updated_at
+            AFTER UPDATE ON file
             FOR EACH ROW
             BEGIN
-              UPDATE files SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+              UPDATE file SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
             END;`,
           },
         ]
@@ -144,44 +146,42 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
             )
           }
 
-          // Retrieve model IDs for inserting files
-          const models = ["style", "template", "page"]
-          const modelIds: { [key: string]: number } = {}
-          models.forEach(model => {
-            const result = sql.execute(
-              `SELECT id FROM models WHERE name = ?;`,
-              [model]
-            )
-
-            console.log("Result from SQL.js:", result)
-            if (result && Array.isArray(result) && result.length > 0) {
-              modelIds[model] = (result as any)[0]["id"] as number // sue me
-            } else {
-              throw new Error(`Model '${model}' not found.`)
-            }
-          })
-
           // Insert test files with corresponding model_id
           const fileQueries = [
             {
-              query: `INSERT OR IGNORE INTO files (name, model_id, content, data) VALUES (?, ?, ?, ?);`,
+              query: `INSERT OR IGNORE INTO file (name, model_id, data) VALUES (?, ?, ?);`,
               params: [
                 "main",
-                modelIds["page"],
-                defaultMd,
+                MODEL_IDS["page"],
                 JSON.stringify({
                   template: 2,
-                  title: "Hello, Organ Static!",
+                  title: "Hello, Organ Pages!",
+                  body: {
+                    type: "html",
+                    content: "<p>Hello, Organ Pages!</p>",
+                  },
                 }),
               ],
             },
             {
-              query: `INSERT OR IGNORE INTO files (name, model_id, content) VALUES (?, ?, ?);`,
-              params: ["index", modelIds["template"], defaultHbs],
+              query: `INSERT OR IGNORE INTO file (name, model_id, data) VALUES (?, ?, ?);`,
+              params: [
+                "index",
+                MODEL_IDS["template"],
+                JSON.stringify({
+                  body: { type: "plaintext", content: defaultHbs },
+                }),
+              ],
             },
             {
-              query: `INSERT OR IGNORE INTO files (name, model_id, content) VALUES (?, ?, ?);`,
-              params: ["styles", modelIds["style"], defaultCss],
+              query: `INSERT OR IGNORE INTO file (name, model_id, data) VALUES (?, ?, ?);`,
+              params: [
+                "style.css",
+                MODEL_IDS["templateAsset"],
+                JSON.stringify({
+                  body: { type: "plaintext", content: defaultCss },
+                }),
+              ],
             },
           ]
 

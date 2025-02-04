@@ -2,6 +2,7 @@ import type { SelectedFiles } from "@/lib/types"
 import { FileList } from "./FileList"
 import { Sidebar, SidebarContent } from "./ui/sidebar"
 import { Button } from "./ui/button"
+import { NavUser } from "./NavUser"
 
 export function AppSidebar({
   selectedFiles,
@@ -16,18 +17,18 @@ export function AppSidebar({
 }) {
   return (
     <Sidebar>
-      <SidebarContent className="p-2">
+      <SidebarContent className="p-1 bg-zinc-800 text-zinc-100 ">
         {editTemplate ? (
           <>
             <FileList
-              key="style"
-              type="style"
+              key="template" // force React to dismount and remount the component
+              type="template"
               selectedFiles={selectedFiles}
               setSelectedFiles={setSelectedFiles}
             />
             <FileList
-              key="template" // force React to dismount and remount the component
-              type="template"
+              key="templateAsset"
+              type="templateAsset"
               selectedFiles={selectedFiles}
               setSelectedFiles={setSelectedFiles}
             />
@@ -49,10 +50,12 @@ export function AppSidebar({
           </>
         )}
         <Button
-          className="mt-auto bg-blue-600"
+          className="mt-auto text-zinc-100 bg-zinc-800"
+          variant="outline"
           onClick={() => setEditTemplate(editTemplate => !editTemplate)}>
           Edit {editTemplate ? "Content" : "Template"}
         </Button>
+        <NavUser />
       </SidebarContent>
     </Sidebar>
   )

@@ -7,12 +7,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// this is faulty and should be removed - fetch always throws Error for blob urls due to cors
 export async function isBlobUrlValid(blobUrl: string): Promise<boolean> {
   try {
     const response = await fetch(blobUrl)
     return response.ok
   } catch (error) {
-    console.error("Blob URL not valid: ", blobUrl)
+    console.error("Blob URL not valid: ", blobUrl, error)
     return false
   }
 }
@@ -22,6 +23,7 @@ export const getValidBlobUrl = async (
   url: string,
   execute: Execute
 ) => {
+  console.log("getValidBlobUrl", id, url)
   const isValid = await isBlobUrlValid(url)
   if (!isValid) {
     const asset = await loadAssetFromIndexedDB(id)

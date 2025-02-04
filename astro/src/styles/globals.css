@@ -79,4 +79,135 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  .grow-wrap {
+    .grow-wrap {
+      /* easy way to plop the elements on top of each other and have them both sized based on the tallest one's height */
+      display: grid;
+    }
+    .grow-wrap::after {
+      /* Note the weird space! Needed to preventy jumpy behavior */
+      content: attr(data-replicated-value) " ";
+    
+      /* This is how textarea text behaves */
+      white-space: pre-wrap;
+    
+      /* Hidden from view, clicks, and screen readers */
+      visibility: hidden;
+    }
+    .grow-wrap > textarea {
+      /* You could leave this, but after a user resizes, then it ruins the auto sizing */
+      resize: none;
+    
+      /* Firefox shows scrollbar on growth, you can hide like this. */
+      overflow: hidden;
+    }
+    .grow-wrap > textarea,
+    .grow-wrap::after {
+      /* Identical styling required!! */
+      border: 1px solid black;
+      padding: 0.5rem;
+      font: inherit;
+    
+      /* Place on top of each other */
+      grid-area: 1 / 1 / 2 / 2;
+    }
+  }
+
+  .tiptap {
+    :focus-visible {
+      outline: none;
+      ring: 0;
+      /* ring-ring: ring; */
+    }
+
+    :first-child {
+      margin-top: 0;
+    }
+  
+    /* List styles */
+    ul, 
+    ol {
+      padding: 0 1rem;
+      margin: 1.25rem 1rem 1.25rem 0.4rem;
+      
+      li p {
+        margin-top: 0.25em;
+        margin-bottom: 0.25em;
+      }
+    }
+  
+    /* Heading styles */
+    h1, 
+    h2, 
+    h3, 
+    h4, 
+    h5, 
+    h6 {
+      line-height: 1.1;
+      margin-top: 2.5rem;
+      text-wrap: pretty;
+    }
+  
+    h1, 
+    h2 {
+      margin-top: 3.5rem;
+      margin-bottom: 1.5rem;
+    }
+  
+    h1 { 
+      font-size: 1.4rem; 
+    }
+  
+    h2 { 
+      font-size: 1.2rem; 
+    }
+  
+    h3 { 
+      font-size: 1.1rem; 
+    }
+  
+    h4, 
+    h5, 
+    h6 { 
+      font-size: 1rem; 
+    }
+  
+    /* Code and preformatted text styles */
+    code {
+      background-color: var(--purple-light);
+      border-radius: 0.4rem;
+      color: var(--black);
+      font-size: 0.85rem;
+      padding: 0.25em 0.3em;
+    }
+  
+    pre {
+      background: var(--black);
+      border-radius: 0.5rem;
+      color: var(--white);
+      font-family: 'JetBrainsMono', monospace;
+      margin: 1.5rem 0;
+      padding: 0.75rem 1rem;
+  
+      code {
+        background: none;
+        color: inherit;
+        font-size: 0.8rem;
+        padding: 0;
+      }
+    }
+  
+    blockquote {
+      border-left: 3px solid var(--gray-3);
+      margin: 1.5rem 0;
+      padding-left: 1rem;
+    }
+  
+    hr {
+      border: none;
+      border-top: 1px solid var(--gray-2);
+      margin: 2rem 0;
+    }
+  }
 }

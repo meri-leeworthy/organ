@@ -1,4 +1,4 @@
-import { SqlProvider } from "./SqlContext"
+import { SqlProvider } from "./SqlContext.jsx"
 import React, { useEffect, useState } from "react"
 import {
   ResizableHandle,
@@ -10,10 +10,13 @@ import type { SelectedFiles } from "../lib/types.jsx"
 import { SidebarProvider } from "./ui/sidebar.jsx"
 import { AppSidebar } from "./AppSidebar.jsx"
 import { SelectedFileDisplay } from "./SelectedFileDisplay.jsx"
+import { ClientProvider } from "./ClientContext.jsx"
+import { BlobStoreProvider } from "./BlobStoreContext.jsx"
+import { FileContainer } from "./FileContainer.jsx"
 
 const App: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<SelectedFiles>({
-    activeFileId: 1,
+    activeFileId: null,
     contentFileId: 1,
   })
   const [isVertical, setIsVertical] = useState(false)
@@ -36,30 +39,48 @@ const App: React.FC = () => {
 
   return (
     <SqlProvider>
-      <SidebarProvider>
-        <ResizablePanelGroup
-          direction={isVertical ? "vertical" : "horizontal"}
-          className="min-h-screen max-h-screen">
-          <ResizablePanel defaultSize={50} minSize={30} className="flex">
+      <BlobStoreProvider>
+        <ClientProvider>
+          <SidebarProvider>
             <AppSidebar
               selectedFiles={selectedFiles}
               setSelectedFiles={setSelectedFiles}
               editTemplate={editTemplate}
               setEditTemplate={setEditTemplate}
             />
-            <div className="flex-grow h-full">
-              <SelectedFileDisplay selectedFiles={selectedFiles} />
-            </div>
-          </ResizablePanel>
-          <ResizableHandle />
-          <ResizablePanel defaultSize={50}>
-            <Preview
-              selectedFiles={selectedFiles}
-              setSelectedFiles={setSelectedFiles}
-            />
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </SidebarProvider>
+            {selectedFiles.activeFileId ? (
+              <ResizablePanelGroup
+                direction={isVertical ? "vertical" : "horizontal"}>
+                <ResizablePanel>
+                  <div className="flex-grow h-full">
+                    <FileContainer
+                      selectedFiles={selectedFiles}
+                      onClose={() => {
+                        setSelectedFiles(selectedFiles => ({
+                          activeFileId: null,
+                          contentFileId: selectedFiles.contentFileId,
+                        }))
+                      }}
+                    />
+                  </div>
+                </ResizablePanel>
+                <ResizableHandle className="bg-zinc-700" />
+                <ResizablePanel maxSize={70}>
+                  <Preview
+                    selectedFiles={selectedFiles}
+                    setSelectedFiles={setSelectedFiles}
+                  />
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            ) : (
+              <Preview
+                selectedFiles={selectedFiles}
+                setSelectedFiles={setSelectedFiles}
+              />
+            )}
+          </SidebarProvider>
+        </ClientProvider>
+      </BlobStoreProvider>
     </SqlProvider>
   )
 }

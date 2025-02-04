@@ -1,15 +1,10 @@
 import { useEffect, useRef, useState } from "react"
-import { useSqlContext } from "./SqlContext"
+import { useSqlContext } from "./SqlContext.jsx"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert.jsx"
-import type { Collection, FileData, SelectedFiles } from "../lib/types.jsx"
+import type { FileData, SelectedFiles } from "../lib/types.jsx"
 import type { ParamsObject } from "sql.js"
 import { useDebounce } from "@/hooks/useDebounce.js"
-import { getValidBlobUrl } from "@/lib/utils.js"
-
-type Context = Record<
-  string,
-  { name: string; content: string; file_type: Collection; data: string }
->
+import useRender from "@/hooks/useRender.js"
 
 export const Preview = ({
   selectedFiles,
@@ -25,86 +20,49 @@ export const Preview = ({
   // which may or may not be the same as the selected file name
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
-  const { execute, loading, error, schemaInitialized } = useSqlContext()
   const [files, setFiles] = useState<Map<number, FileData>>(new Map())
-  const [errorMessage, setErrorMessage] = useState<string>("")
   const [refresh, setRefresh] = useState<number>(0)
   const debouncedRefresh = useDebounce(refresh, 50)
   const [previewContent, setPreviewContent] = useState<string>(
     "Generated HTML will be rendered here"
   )
-  const [wasmModule, setWasmModule] = useState<{
-    render: (
-      current_file_id: number,
-      context: Context
-      // css: string,
-      // class_name: string,
-      // partials: Record<string, string>,
-      // images: Record<string, string>
-    ) => string
-  } | null>(null)
 
-  // load WASM module
-  useEffect(() => {
-    const loadWasm = async () => {
-      try {
-        console.log("Loading WASM module...")
-        const module = await import("../wasm/minissg/minissg.js")
-        setWasmModule(module)
-        console.log("WASM module loaded:", module)
-      } catch (e) {
-        console.error("Failed to load WASM module:", e)
-        setErrorMessage("Failed to load WASM module.")
-      }
-    }
-    loadWasm()
-  }, [])
+  const {
+    execute,
+    loading: sqlLoading,
+    error: sqlError,
+    schemaInitialized,
+  } = useSqlContext()
+  const { loading: wasmLoading, error: wasmError, renderLocal } = useRender()
 
   useEffect(() => {
-    if (!schemaInitialized || loading || error) return
+    if (
+      !schemaInitialized ||
+      sqlLoading ||
+      sqlError ||
+      wasmLoading ||
+      wasmError
+    )
+      return
+
     const fetchData = async () => {
       try {
         const query =
-          "SELECT files.id, files.name, files.content, files.data, models.name as type FROM files JOIN models ON files.model_id = models.id;"
+          "SELECT file.id, file.name, file.data, file.url, model.name as type FROM file JOIN model ON file.model_id = model.id;"
         const result = execute(query)
-        console.log("Preview.tsx: Result from SQL.js:", result)
-        const files = result.map(
-          (file: ParamsObject) =>
-            [
-              file.id as number,
-              {
-                id: file.id as number,
-                name: file.name?.toString() || "",
-                content: file.content?.toString() || "",
-                type: file.type?.toString() as FileData["type"],
-                data: JSON.parse(file.data?.toString() || "{}"),
-              },
-            ] as const
-        )
+        // console.log("Preview.tsx: Result from SQL.js:", result)
+        const files = result.map((file: ParamsObject): [number, FileData] => [
+          file.id as number,
+          {
+            id: file.id as number,
+            name: file.name?.toString() || "",
+            type: file.type?.toString() as FileData["type"],
+            data: JSON.parse(file.data?.toString() || "{}"),
+            url: file.url?.toString() || "",
+          },
+        ])
 
         const filesMap = new Map(files)
-
-        console.log("Getting Blob URLs")
-        const assets = files.filter(file => file[1].type === "asset")
-        const updatedAssetsArray = await Promise.all(
-          assets.map(async asset => {
-            const url = await getValidBlobUrl(
-              asset[1].id,
-              asset[1].content,
-              execute
-            )
-            console.log("valid url: ", url)
-            return {
-              ...asset[1],
-              content: url,
-            }
-          })
-        )
-
-        updatedAssetsArray.forEach(asset => {
-          filesMap.set(asset.id, asset)
-        })
-
         setFiles(filesMap)
       } catch (err) {
         console.error("Error fetching data:", err)
@@ -114,95 +72,34 @@ export const Preview = ({
     fetchData()
   }, [
     execute,
-    loading,
-    error,
+    sqlLoading,
+    sqlError,
     schemaInitialized,
     selectedFiles,
     debouncedRefresh,
   ])
 
-  // Update the selected content when the selected file changes
-  // useEffect(() => {
-  //   const contentFileNames = contentFiles.map(file => file.name)
-  //   if (contentFileNames.includes(selectedFileName)) {
-  //     setSelectedContent(selectedFileName)
-  //   }
-  // }, [selectedFileName])
-
-  // const [imageURLs, setImageURLs] = useState<Record<string, string>>({})
-
-  // console.log("refresh:", refresh)
-
-  // Create object URLs for image assets
-  // useEffect(() => {
-  //   const urls: Record<string, string> = {}
-
-  //   assets.forEach(asset => {
-  //     // Adjust the MIME type based on your requirements
-  //     if (asset.name.match(/\.(jpg|jpeg|png|gif|svg)$/i)) {
-  //       urls[asset.name] = URL.createObjectURL(
-  //         new Blob([asset.content], { type: "image/*" })
-  //       )
-  //     }
-  //   })
-
-  //   setImageURLs(urls)
-
-  //   // Cleanup: Revoke object URLs when assets change or component unmounts
-  //   return () => {
-  //     Object.values(urls).forEach(url => URL.revokeObjectURL(url))
-  //   }
-  // }, [assets])
-
   // Update the preview content when the templates or content files change
   useEffect(() => {
-    // console.log("Updating preview content...")
-    // setRefresh(false)
-    if (!wasmModule) {
-      console.error("WASM module not loaded yet")
-      setErrorMessage(
-        "WASM module not loaded yet. Please wait a moment and try again."
-      )
-      return
-    }
-
-    const context: Context = {}
-    files.forEach(file => {
-      context[file.id] = {
-        name: file.name,
-        content: file.content,
-        file_type: file.type,
-        data: JSON.stringify(file.data),
-      }
-    })
-
-    // console.log("Selected file:", selectedFile)
-    console.log("Context:", context)
+    if (sqlLoading || wasmLoading) return
+    if (!selectedFiles.contentFileId) return
 
     try {
-      // Pass imageURLs as a JSON string or appropriate format
-      const combinedContent = wasmModule.render(
-        selectedFiles.contentFileId,
-        context
-      )
-
-      console.log("Conversion result:", combinedContent)
+      const combinedContent = renderLocal(selectedFiles.contentFileId, files)
       setPreviewContent(combinedContent)
-      setErrorMessage("")
     } catch (e) {
       console.error("Error during conversion:", e)
       setPreviewContent("")
-      setErrorMessage(String(e))
     }
-  }, [selectedFiles, wasmModule, files, loading, debouncedRefresh]) //,
+  }, [selectedFiles, wasmLoading, files, sqlLoading, debouncedRefresh]) //,
 
   // re-render on keypresses
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
+    const handleKeyDown = () => {
       setRefresh(refresh => refresh + 1) // Trigger rerender by updating state
     }
 
-    const handleClick = (event: MouseEvent) => {
+    const handleClick = () => {
       setRefresh(refresh => refresh + 1)
     }
 
@@ -230,14 +127,9 @@ export const Preview = ({
       activeFileId: newFileId,
       contentFileId: newFileId,
     })
-    // setSelectedContent(href.slice(1))
   }
 
-  // Function to handle link clicks inside the iframe
-  interface IframeClickEvent extends Event {
-    target: HTMLElement
-  }
-
+  // handle link clicks inside the iframe
   const handleIframeClick = (event: MouseEvent) => {
     const target = event.target as HTMLElement
 
@@ -274,21 +166,21 @@ export const Preview = ({
 
   return (
     <>
-      {errorMessage ? (
+      {wasmError ? (
         <div
           id="error-message"
-          className="flex items-center justify-center h-full">
+          className="flex items-center justify-center h-screen">
           <div>
             <Alert variant="destructive">
               <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{errorMessage}</AlertDescription>
+              <AlertDescription>{wasmError}</AlertDescription>
             </Alert>
           </div>
         </div>
       ) : (
         <iframe
           ref={iframeRef}
-          className="h-full items-center overflow-y-scroll border-l-1 p-2 w-full"
+          className="items-center w-full h-screen overflow-y-scroll border-l-1"
           id="preview-pane"
           onLoad={handleIframeLoad}
           srcDoc={previewContent}

@@ -138,3 +138,40 @@ export const loadFromIndexedDB = async () => {
     }
   })
 }
+
+export async function iterateIndexedDB(
+  storeName: string
+): Promise<{ key: string; value: unknown }[]> {
+  try {
+    const db = await openDatabase()
+
+    const transaction = db.transaction(storeName, "readonly")
+    const objectStore = transaction.objectStore(storeName)
+
+    const items: { key: string; value: unknown }[] = []
+    const cursorRequest = objectStore.openCursor()
+
+    return new Promise((resolve, reject) => {
+      cursorRequest.onsuccess = function (event: Event) {
+        const cursor = (event.target as IDBRequest).result
+        if (cursor) {
+          // Access the key and value
+          console.log("Key:", cursor.key, "Value:", cursor.value)
+          items.push({ key: cursor.key, value: cursor.value })
+
+          // Move to the next entry
+          cursor.continue()
+        } else {
+          // No more entries
+          resolve(items)
+        }
+      }
+      cursorRequest.onerror = function (event: Event) {
+        reject(event.target)
+      }
+    })
+  } catch (error) {
+    console.error("IndexedDB error:", error)
+    throw error
+  }
+}

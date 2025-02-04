@@ -2,105 +2,60 @@
 
 use handlebars::Handlebars;
 use pulldown_cmark::{html, Options, Parser};
-use serde::de::Error as SerdeError;
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Map, Value};
+use serde::de::Error;
+use serde_json::{json, Value};
 use serde_wasm_bindgen::{from_value, to_value};
 use std::collections::HashMap;
-use std::convert::TryInto;
-use std::fmt::{self, Display, Formatter};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_test::wasm_bindgen_test;
 
+mod types;
+
+use types::*;
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     fn log(s: &str); // log to JS console
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-enum Collection {
-    Asset,
-    Template,
-    Page,
-    Style,
-    Partial,
+#[wasm_bindgen(start)]
+pub fn main() {
+    std::panic::set_hook(Box::new(console_error_panic_hook::hook));
 }
 
-impl Display for Collection {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match self {
-            Collection::Asset => write!(f, "asset"),
-            Collection::Template => write!(f, "template"),
-            Collection::Page => write!(f, "page"),
-            Collection::Style => write!(f, "style"),
-            Collection::Partial => write!(f, "partial"),
-        }
-    }
-}
+fn get_content_and_type(data: &serde_json::Map<String, Value>) -> Result<(String, String), String> {
+    log("get_content_and_type");
+    log(&format!("{:?}", data));
+    let body = data
+        .get("body")
+        .and_then(|body| body.as_object())
+        .ok_or_else(|| "No body object found".to_string())?;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct UnparsedContentData {
-    name: String,
-    content: String,
-    file_type: String,
-    data: String,
-}
+    let content = body
+        .get("content")
+        .and_then(|content| content.as_str())
+        .ok_or_else(|| "No content found in body".to_string())?
+        .to_string();
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
-struct ContentData {
-    name: String,
-    content: String,
-    file_type: Collection,
-    data: Map<String, Value>,
-}
+    let content_type = body
+        .get("type")
+        .and_then(|t| t.as_str())
+        .ok_or_else(|| "No type found in body".to_string())?
+        .to_string();
 
-// Alias for the expected record type
-// note that the key is serialised as a string, but it functions as primary key id
-// and is interpreted as an integer in the JS context
-type UnparsedContentRecord = HashMap<String, UnparsedContentData>;
-
-#[derive(Serialize, Deserialize, Debug)]
-struct ContentRecord {
-    content: HashMap<String, ContentData>,
-}
-
-impl ContentRecord {
-    fn new() -> Self {
-        ContentRecord {
-            content: HashMap::new(),
-        }
-    }
-
-    fn new_with_content(content: HashMap<String, ContentData>) -> Self {
-        ContentRecord { content }
-    }
-
-    fn iter(&self) -> impl Iterator<Item = (&String, &ContentData)> {
-        self.content.iter()
-    }
-
-    fn get(&self, key: &String) -> Option<&ContentData> {
-        self.content.get(key)
-    }
+    Ok((content, content_type))
 }
 
 // Should return a string of rendered HTML for the current filename
 #[wasm_bindgen]
 pub fn render(current_file_id: i32, context: &JsValue) -> Result<String, JsValue> {
-    // log(&format!("Context: {:?}", context));
-
-    // Now, current_file_id is already an i32, no need for manual conversion
-    // Validate context as a Record<string, {content: string, data: string}>
-    let context = validate_content_record(context).map_err(|e| e.to_string())?;
+    let context = validate_context(context).map_err(|e| e.to_string())?;
     let context = parse_context(context);
 
     let current_file = context
         .get(&current_file_id.to_string())
         .ok_or_else(|| JsValue::from_str("Current file not found in context"))?;
-
-    // log(&format!("Current file: {:?}", current_file.data));
 
     // Get the template filename from the current file data
     let template_id = match current_file
@@ -117,15 +72,25 @@ pub fn render(current_file_id: i32, context: &JsValue) -> Result<String, JsValue
     // Get the template content from the context
     let template = context
         .get(&template_id)
-        .ok_or_else(|| JsValue::from_str("Template not found in context"))?
-        .content
-        .clone();
+        .ok_or_else(|| JsValue::from_str("Template not found in context"))?;
+
+    let (template_content, _) = get_content_and_type(&template.data)
+        .map_err(|e| JsValue::from_str(&format!("Failed to get template content: {}", e)))?;
 
     // get images from context
     let images: ContentRecord = ContentRecord::new_with_content(
         context
             .iter()
             .filter(|(_, v)| matches!(v.file_type, Collection::Asset))
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect(),
+    );
+
+    // get template assets from context
+    let template_assets: ContentRecord = ContentRecord::new_with_content(
+        context
+            .iter()
+            .filter(|(_, v)| matches!(v.file_type, Collection::TemplateAsset))
             .map(|(k, v)| (k.clone(), v.clone()))
             .collect(),
     );
@@ -139,52 +104,41 @@ pub fn render(current_file_id: i32, context: &JsValue) -> Result<String, JsValue
             .collect(),
     );
 
-    // Render Markdown to HTML
-    let html_output = match markdown_to_html(&current_file.content, &images) {
-        Ok(output) => output,
-        Err(e) => return Err(e.into()),
+    // Get content and content type from current file
+    let (content, content_type) = get_content_and_type(&current_file.data)
+        .map_err(|e| JsValue::from_str(&format!("Failed to get file content: {}", e)))?;
+
+    // Convert content based on type
+    let html_output = match content_type.as_str() {
+        "html" => content,
+        "plaintext" | _ => match markdown_to_html(&content, &images, &template_assets) {
+            Ok(output) => output,
+            Err(e) => return Err(e.into()),
+        },
     };
 
-    fn name_with_extension(name: String, file_type: &Collection) -> String {
-        match file_type {
-            Collection::Style => return name + "-css",
-            _ => {
-                log("Files in context should only be Style");
-                panic!("Files in context should only be Style")
-            }
-        }
-    }
-
-    // create ContentRecord with all the style files
-    let css: HashMap<String, String> = context
-        .iter()
-        .filter(|(_, v)| matches!(v.file_type, Collection::Style))
-        .map(|(_k, v)| {
-            (
-                name_with_extension(v.clone().name, &v.file_type),
-                v.clone().content,
-            )
-        })
-        .collect();
-
     // convert ContentRecord to JSON and add "content" key with "html_output" as value
-    let mut render_context: Value =
-        serde_wasm_bindgen::from_value(to_value(&css).expect("CSS Value Conversion failed"))
-            .expect("CSS JSON Conversion failed");
+    let mut render_context: Value = json!({});
     render_context["content"] = json!(html_output);
 
     for (key, value) in &current_file.data {
         render_context[key] = value.clone();
     }
 
-    log(format!("Current file data: {:?}", current_file.data).as_str());
-    log(format!("Render context: {:?}", render_context).as_str());
-
     // Render the template with the context
-    let rendered_template = match render_template(&template, &partials, &render_context) {
+    let mut rendered_template = match render_template(&template_content, &partials, &render_context)
+    {
         Ok(output) => output,
         Err(e) => return Err(JsValue::from_str(&e)),
     };
+
+    // Replace template asset URLs
+    for (_id, file) in template_assets.iter() {
+        rendered_template = rendered_template.replace(
+            &format!("href=\"{}\"", file.name),
+            &format!("href=\"{}\"", file.url),
+        );
+    }
 
     Ok(rendered_template)
 }
@@ -197,9 +151,11 @@ fn render_template(
     let mut handlebars = Handlebars::new();
 
     // Register the partials
-    for (id, value) in partials.iter() {
+    for (id, file) in partials.iter() {
+        let (content, _) = get_content_and_type(&file.data)
+            .map_err(|e| format!("Failed to get partial content: {}", e))?;
         handlebars
-            .register_partial(id, value.content.as_str())
+            .register_partial(id, &content)
             .map_err(|e| format!("Failed to register partial {}: {}", id, e))?;
     }
 
@@ -215,7 +171,11 @@ fn render_template(
     }
 }
 
-fn markdown_to_html(markdown_input: &str, images: &ContentRecord) -> Result<String, String> {
+fn markdown_to_html(
+    markdown_input: &str,
+    images: &ContentRecord,
+    template_assets: &ContentRecord,
+) -> Result<String, String> {
     let options = Options::empty();
 
     // Render the Markdown to HTML
@@ -227,34 +187,38 @@ fn markdown_to_html(markdown_input: &str, images: &ContentRecord) -> Result<Stri
     for (_id, file) in images.iter() {
         html_output = html_output.replace(
             &format!("src=\"{}\"", file.name),
-            &format!("src=\"{}\"", file.content),
+            &format!("src=\"{}\"", file.url),
         );
     }
 
     Ok(html_output)
 }
 
-fn validate_content_record(
-    value: &JsValue,
-) -> Result<UnparsedContentRecord, serde_wasm_bindgen::Error> {
+fn validate_context(value: &JsValue) -> Result<UnparsedContentRecord, serde_wasm_bindgen::Error> {
     serde_wasm_bindgen::from_value(value.clone())
 }
 
 fn parse_file(file: &UnparsedContentData) -> Result<ContentData, serde_json::Error> {
     let data = serde_json::from_str(&file.data)?;
+
     let file_type = match file.file_type.as_str() {
         "asset" => Collection::Asset,
         "template" => Collection::Template,
         "page" => Collection::Page,
-        "style" => Collection::Style,
+        "templateAsset" => Collection::TemplateAsset,
         "partial" => Collection::Partial,
-        _ => return Err(serde_json::Error::custom("Invalid file type")),
+        _ => {
+            return Err(serde_json::Error::custom(format!(
+                "Invalid file type for file: {:?}",
+                file,
+            )))
+        }
     };
     Ok(ContentData {
         name: file.name.clone(),
-        content: file.content.clone(),
         file_type,
         data,
+        url: file.url.clone(),
     })
 }
 
@@ -280,8 +244,10 @@ mod tests {
     fn test_markdown_to_html() {
         let markdown = "# Hello World\nThis is a test.";
         let images: ContentRecord = ContentRecord::new();
+        let template_assets: ContentRecord = ContentRecord::new();
         let expected = "<h1>Hello World</h1>\n<p>This is a test.</p>\n";
-        let result = markdown_to_html(markdown, &images).expect("Markdown to html failed");
+        let result =
+            markdown_to_html(markdown, &images, &template_assets).expect("Markdown to html failed");
         print!("{}", result);
         assert_eq!(result, expected);
     }
@@ -294,14 +260,14 @@ mod tests {
             "9".to_string(),
             UnparsedContentData {
                 name: "file1".to_string(),
-                content: "# Hello".to_string(),
                 file_type: "page".to_string(),
-                data: "{\"template\": \"template1\"}".to_string(),
+                data: "{\"template\": \"template1\", \"body\": {\"type\": \"plaintext\", \"content\": \"# Hello\"}}".to_string(),
+                url: "".to_string(),
             },
         );
         let valid_context =
             to_value(&valid_map).expect("Content record to Value conversion failed");
-        let result = validate_content_record(&valid_context);
+        let result = validate_context(&valid_context);
         match result {
             Ok(_) => assert!(true),
             Err(e) => panic!("Validation failed: {:?}", e),
@@ -312,12 +278,11 @@ mod tests {
         invalid_map.insert(
             "file1.md".to_string(),
             serde_json::json!({
-                "content": "# Hello",
                 "data": 123  // Invalid type for 'data', should be a string
             }),
         );
         let invalid_context = to_value(&invalid_map).expect("Invalid map to Value conv failed");
-        let result = validate_content_record(&invalid_context);
+        let result = validate_context(&invalid_context);
         assert!(result.is_err());
     }
 
@@ -325,14 +290,13 @@ mod tests {
     fn test_parse_file() {
         let unparsed_content = UnparsedContentData {
             name: "file1".to_string(),
-            content: "# Hello".to_string(),
             file_type: "page".to_string(),
-            data: "{\"template\": \"template1\"}".to_string(),
+            data: "{\"template\": \"template1\", \"body\": {\"type\": \"plaintext\", \"content\": \"# Hello\"}}".to_string(),
+            url: "".to_string(),
         };
         let result = parse_file(&unparsed_content);
         assert!(result.is_ok());
         let parsed_content = result.expect("Parsing content failed");
-        assert_eq!(parsed_content.content, "# Hello");
         assert_eq!(
             parsed_content
                 .data
@@ -348,9 +312,9 @@ mod tests {
             "1".to_string(),
             UnparsedContentData {
                 name: "file1".to_string(),
-                content: "# Hello".to_string(),
                 file_type: "page".to_string(),
-                data: "{\"template\": \"template1\"}".to_string(),
+                data: "{\"template\": \"template1\", \"body\": {\"type\": \"plaintext\", \"content\": \"# Hello\"}}".to_string(),
+                url: "".to_string(),
             },
         )]);
         let result = parse_context(unparsed_context);
