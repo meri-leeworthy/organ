@@ -1,14 +1,14 @@
 {
-  "name": "astro",
+  "name": "organ",
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "wasm": "cd ../wasm && wasm-pack build --target bundler --out-dir ../astro/src/wasm/minissg",
-    "dev": "npm run wasm && astro dev",
-    "start": "astro dev",
     "build": "astro check && astro build",
+    "dev": "astro dev",
+    "start": "astro dev",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "wasm": "cd ../wasm && wasm-pack build --target bundler --out-dir ../astro/src/wasm/minissg"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",
