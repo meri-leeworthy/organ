@@ -199,8 +199,6 @@ export const SelectedFileDisplay = ({
         </div>
       )
 
-    if (field.name === "template" && templates.size <= 1) return null
-
     return (
       <div className="flex flex-col gap-2">
         <Label htmlFor={field.name} className="capitalize">
@@ -215,7 +213,6 @@ export const SelectedFileDisplay = ({
     if (!file.data) return null
     const defaultValue = file.data[field.name] || ""
     if (field.name === "template") {
-      if (templates.size <= 1) return null
       return (
         <FormField
           name={"template"}
