@@ -4,6 +4,7 @@ dist/
 .astro/
 
 .envrc
+package-lock.json
 
 # wasm build output
 wasm/target
