@@ -3,8 +3,8 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "build:wasm": "cd ../wasm && wasm-pack build --target bundler --out-dir ../astro/src/wasm/minissg",
-    "dev": "npm run build:wasm && astro dev",
+    "wasm": "cd ../wasm && wasm-pack build --target bundler --out-dir ../astro/src/wasm/minissg",
+    "dev": "npm run wasm && astro dev",
     "start": "astro dev",
     "build": "astro check && astro build",
     "preview": "astro preview",
