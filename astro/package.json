@@ -6,7 +6,7 @@
     "build:wasm": "cd ../wasm && wasm-pack build --target bundler --out-dir ../astro/src/wasm/minissg",
     "dev": "npm run build:wasm && astro dev",
     "start": "astro dev",
-    "build": "npm run build:wasm && astro check && astro build",
+    "build": "astro check && astro build",
     "preview": "astro preview",
     "astro": "astro"
   },
