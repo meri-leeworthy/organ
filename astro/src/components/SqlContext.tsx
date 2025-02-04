@@ -7,6 +7,7 @@ import React, {
 } from "react"
 import useSql, { type UseSqlResult } from "@/hooks/useSql"
 import { MODEL_IDS } from "@/lib/consts"
+import { Alert } from "./ui/alert"
 
 interface SqlProviderProps {
   children: ReactNode
@@ -43,14 +44,12 @@ const defaultHbs = `<!DOCTYPE html>
 </head>
 
 <body>
-<div class="preview-pane">
-  <h1>{{title}}</h1>
-  {{{content}}}
-</div>
+<h1>{{title}}</h1>
+{{{content}}}
 </body>
 </html>`
 
-const defaultMd = `This is a sample **Markdown** file.`
+// const defaultMd = `This is a sample **Markdown** file.`
 
 const SqlContext = createContext<ExtendedUseSqlResult | undefined>(undefined)
 
@@ -214,14 +213,20 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
   }, [sql.loading, sql.error, sql.execute, schemaInitialized])
 
   if (sql.loading || (!schemaInitialized && !schemaError)) {
-    return <div>Loading database...</div>
+    return (
+      <div className="flex items-center justify-center w-screen h-screen gap-2 bg-zinc-950">
+        <Alert className="w-64">Loading database...</Alert>
+      </div>
+    )
   }
 
   if (sql.error || schemaError) {
     return (
-      <div>
-        Error initializing database:{" "}
-        {sql.error?.message || schemaError?.message}
+      <div className="flex items-center justify-center w-screen h-screen gap-2 bg-zinc-950">
+        <Alert variant="destructive" className="w-64">
+          Error initializing database:{" "}
+          {sql.error?.message || schemaError?.message}
+        </Alert>
       </div>
     )
   }

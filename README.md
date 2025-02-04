@@ -1,4 +1,4 @@
-# Local WASM SSG
+# Organ
 
 This project aims to provide a simple way to build a static site with WebAssembly. The frontend is built with [Astro](https://astro.build) and React, with the 'SSG' part handled by a WebAssembly module built with Rust and [`wasm-pack`](https://rustwasm.github.io/wasm-pack/).
 
@@ -76,3 +76,8 @@ other todos:
 - wysiwyg editor
 - keyboard shortcuts
 - can preview be an iframe?
+
+# List of bugs
+
+- deleting files doesn't work
+- 

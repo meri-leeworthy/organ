@@ -1,5 +1,4 @@
-export const API_BASE_URL =
-  "https://organ-static-server.meri-leeworthy.workers.dev/"
+export const API_BASE_URL = "https://api.organ.is/"
 // export const API_BASE_URL = "http://localhost:8787/"
 
 export const MODEL_IDS = {

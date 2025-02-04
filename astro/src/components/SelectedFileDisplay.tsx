@@ -19,7 +19,7 @@ import { X } from "lucide-react"
 import { useClient } from "@/hooks/useClient"
 import useRender from "@/hooks/useRender"
 import type { ParamsObject } from "sql.js"
-import { Editor } from "./Editor"
+import { EditorComponent as Editor } from "./Editor"
 import type { Schema } from "./FileContainer"
 
 export interface Field {
