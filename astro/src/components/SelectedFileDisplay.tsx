@@ -49,10 +49,7 @@ export const SelectedFileDisplay = ({
   const { execute, loading, error, schemaInitialized } = useSqlContext()
 
   const handlePublishFile = async () => {
-    if (!schemaInitialized || loading || error) return
-    if (!file.data || !file.data.body || !file.data.body.content) return
-
-    if (!file) return
+    if (!schemaInitialized || loading || error || !file) return
     console.log("uploading file", file)
 
     if (file.type === "asset") {
@@ -67,9 +64,8 @@ export const SelectedFileDisplay = ({
           file.name,
           file.data.mime_type
         )
-        if (!url) {
-          throw new Error("No url found")
-        }
+        if (!url) throw new Error("No url found")
+
         const newFile = {
           ...file,
           url,
@@ -78,10 +74,11 @@ export const SelectedFileDisplay = ({
         execute("UPDATE file SET url = ? WHERE id = ?;", [url, file.id])
       } catch (error) {
         console.error("Error fetching blob:", error)
-      } finally {
-        return
       }
+      return
     }
+
+    if (!file.data || !file.data.body || !file.data.body.content) return
 
     if (file.type === "templateAsset") {
       let mimeType = "text/css"
@@ -90,9 +87,7 @@ export const SelectedFileDisplay = ({
       }
       const blob = new Blob([file.data.body.content], { type: mimeType })
       const url = await client.uploadFile(blob, file.name, mimeType)
-      if (!url) {
-        throw new Error("No url found")
-      }
+      if (!url) throw new Error("No url found")
       const newFile = {
         ...file,
         url,
@@ -309,13 +304,13 @@ export const SelectedFileDisplay = ({
         </Button>
       </header>
 
-      <Card className="w-4/5 p-4 max-h-4/5">
+      <Card className="w-5/6 p-4 my-10 overflow-y-scroll">
         {type === "asset" ? (
           <div className="flex flex-col gap-2">
             <img src={file.blob_url} alt="Selected Asset" />
           </div>
         ) : (
-          <div className="flex flex-col h-full mb-2 space-y-2">
+          <div className="flex flex-col h-full space-y-2">
             {schema.fields.map(renderFieldWithLabel)}
           </div>
         )}

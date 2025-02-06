@@ -16,6 +16,8 @@ export class Client {
   private data: UserData = defaultUserData
   private jwt: string | null = null
   private refreshToken: string | null = null
+  private isRefreshing = false
+  private refreshPromise: Promise<void> | null = null
 
   constructor() {
     if (typeof window === "undefined") return
@@ -58,27 +60,78 @@ export class Client {
     localStorage.removeItem("refreshToken")
   }
 
-  private async fetchWithCors(url: string, options: RequestInit = {}) {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-      credentials: "include",
-      mode: "cors",
-    })
+  private async fetchWithRetry(
+    url: string,
+    options: RequestInit = {},
+    isRetry = false
+  ): Promise<Response> {
+    try {
+      // Add Authorization header if we have a token
+      if (this.jwt) {
+        options.headers = {
+          ...options.headers,
+          Authorization: `Bearer ${this.jwt}`,
+        }
+      }
 
-    if (!response.ok) {
-      const text = await response.text()
-      throw new Error(text || response.statusText)
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...options.headers,
+        },
+        credentials: "include",
+        mode: "cors",
+      })
+
+      // If the response is 401 and we haven't retried yet, attempt to refresh the token
+      if (response.status === 401 && !isRetry) {
+        try {
+          await this.refreshTokenIfNeeded()
+          // Retry the original request with the new token
+          return this.fetchWithRetry(url, options, true)
+        } catch (error) {
+          console.error("Token refresh failed:", error)
+          this.clear() // Clear all auth data if refresh fails
+          throw new Error("Authentication expired. Please log in again.")
+        }
+      }
+
+      if (!response.ok) {
+        const text = await response.text()
+        throw new Error(text || response.statusText)
+      }
+
+      return response
+    } catch (error) {
+      console.error("Fetch error:", error)
+      throw error
+    }
+  }
+
+  private async refreshTokenIfNeeded(): Promise<void> {
+    // If we're already refreshing, wait for that to complete
+    if (this.isRefreshing) {
+      return this.refreshPromise!
     }
 
-    return response
+    // If we don't have a refresh token, we can't refresh
+    if (!this.refreshToken) {
+      throw new Error("No refresh token available")
+    }
+
+    try {
+      this.isRefreshing = true
+      this.refreshPromise = this.refreshJWT()
+      await this.refreshPromise
+    } finally {
+      this.isRefreshing = false
+      this.refreshPromise = null
+    }
   }
 
   async login(email: string, password: string): Promise<void> {
-    const response = await this.fetchWithCors(API_BASE_URL + "login", {
+    const response = await this.fetchWithRetry(API_BASE_URL + "login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     })
@@ -87,13 +140,8 @@ export class Client {
     this.jwt = jwt
     this.refreshToken = refreshToken
 
-    console.log("jwt: ", jwt)
-    console.log("refreshToken: ", refreshToken)
-
     // Fetch user data using the JWT
-    const userResponse = await this.fetchWithCors(API_BASE_URL + "user", {
-      headers: { Authorization: `Bearer ${jwt}` },
-    })
+    const userResponse = await this.fetchWithRetry(API_BASE_URL + "user")
 
     const parsedResponse = await userResponse.json()
 
@@ -111,7 +159,7 @@ export class Client {
     if (!this.refreshToken) return
 
     try {
-      await this.fetchWithCors(API_BASE_URL + "logout", {
+      await this.fetchWithRetry(API_BASE_URL + "logout", {
         method: "POST",
         body: JSON.stringify({ refresh_token: this.refreshToken }),
       })
@@ -125,40 +173,38 @@ export class Client {
     currentPassword: string,
     newPassword: string
   ): Promise<void> {
-    if (!this.jwt) throw new Error("Not logged in")
-
-    await this.fetchWithCors(API_BASE_URL + "password/change", {
+    await this.fetchWithRetry(API_BASE_URL + "password/change", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.jwt}`,
-      },
       body: JSON.stringify({ currentPassword, newPassword }),
     })
   }
 
-  async refreshJWT(): Promise<void> {
+  private async refreshJWT(): Promise<void> {
     if (!this.refreshToken) throw new Error("No refresh token available")
 
-    const response = await this.fetchWithCors(API_BASE_URL + "token/refresh", {
+    const response = await fetch(API_BASE_URL + "token/refresh", {
       method: "POST",
-      body: JSON.stringify({ refreshToken: this.refreshToken }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refresh_token: this.refreshToken }),
+      credentials: "include",
+      mode: "cors",
     })
 
-    const { jwt, refreshToken } = await response.json()
+    if (!response.ok) {
+      throw new Error("Failed to refresh token")
+    }
+
+    const { jwt, refresh_token: newRefreshToken } = await response.json()
     this.jwt = jwt
-    this.refreshToken = refreshToken
+    this.refreshToken = newRefreshToken
     this.save()
   }
 
   async updateStorageRemaining(): Promise<void> {
-    if (!this.jwt) throw new Error("Not logged in")
-
-    // We'll use the upload endpoint with a zero-size request to get storage info
-    const response = await this.fetchWithCors(
-      API_BASE_URL + "upload?file=dummy&size=0",
-      {
-        headers: { Authorization: `Bearer ${this.jwt}` },
-      }
+    const response = await this.fetchWithRetry(
+      API_BASE_URL + "upload?file=dummy&size=0"
     )
 
     const { remaining_storage } = await response.json()
@@ -172,23 +218,18 @@ export class Client {
     console.log("Uploading file:", {
       fileName,
       size: file.size,
-      type: file.type,
+      mime: mimeType,
     })
-    if (!this.jwt) throw new Error("Not logged in")
 
     // Get presigned URL
     console.log("Requesting presigned URL for:", {
       fileName,
       size: file.size,
-      type: file.type,
+      mime: mimeType,
     })
-    const response = await this.fetchWithCors(
+    const response = await this.fetchWithRetry(
       API_BASE_URL +
-        `upload?file=${encodeURIComponent(fileName)}&size=${file.size}`,
-      {
-        method: "GET",
-        headers: { Authorization: `Bearer ${this.jwt}` },
-      }
+        `upload?file=${encodeURIComponent(fileName)}&size=${file.size}&mime=${encodeURIComponent(mimeType)}`
     )
 
     const { presigned_url } = await response.json()
@@ -219,7 +260,6 @@ export class Client {
       }
 
       const parsedPresignedUrl = new URL(presigned_url)
-
       const url = "https://static.organ.is" + parsedPresignedUrl.pathname
       return url
     } catch (error) {

@@ -25,8 +25,6 @@ pub fn main() {
 }
 
 fn get_content_and_type(data: &serde_json::Map<String, Value>) -> Result<(String, String), String> {
-    log("get_content_and_type");
-    log(&format!("{:?}", data));
     let body = data
         .get("body")
         .and_then(|body| body.as_object())
@@ -52,6 +50,8 @@ fn get_content_and_type(data: &serde_json::Map<String, Value>) -> Result<(String
 pub fn render(current_file_id: i32, context: &JsValue) -> Result<String, JsValue> {
     let context = validate_context(context).map_err(|e| e.to_string())?;
     let context = parse_context(context);
+
+    log(&format!("context: {:?}", context));
 
     let current_file = context
         .get(&current_file_id.to_string())

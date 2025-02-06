@@ -45,11 +45,16 @@ export function FileListItem({
 
     execute(
       `
-      DELETE FROM files
+      DELETE FROM file
       WHERE id = ?
       `,
       [fileId]
     )
+
+    // Delete the file from the blob store
+    blobStore.deleteBlob(fileId)
+
+    // need to delete from R2 as well but we don't have endpoint for that yet
 
     const newFiles = new Map(files)
     newFiles.delete(fileId)

@@ -73,9 +73,15 @@ other todos:
 
 # bugs
 
+- publishing images doesn't seem to work
+- blob urls are not updated on refresh
 - deleting files doesn't work
 - changing the template doesn't work straight away
   - it doesn't update when you change the template or then when you type in title
   - it does update when you type in content or do a transaction on the editor
 - sometimes get render error - template not found in context
 - sometimes content is randomly replaced with {{{title}}} {{{content}}} ??
+- publish doesn't auto-refresh token
+- after publishing, the url appears in the header bar (ugly) but when you go away and come back it's gone
+- blob urls are not replaced with the new url with the new rich text editor, images and style links not injected
+- toggle buttons on toolbar don't toggle correctly in relation to the current selection

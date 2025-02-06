@@ -9,7 +9,8 @@ import {
   type SelectedFiles,
 } from "@/lib/types"
 import type { Field } from "./SelectedFileDisplay"
-import { useBlobStore } from "./BlobStoreContext"
+import { useBlobStore, type BlobStore } from "./BlobStoreContext"
+import { updateImageUrls } from "@/lib/updateImageUrls"
 
 export interface Schema {
   fields: Field[]
@@ -63,13 +64,18 @@ export function FileContainer({
 
         console.log("Selected file from database:", result)
 
+        const data = JSON.parse(result[0].data as string)
+        // here is where blob urls need to be refreshed for html content
+
         const newFile = {
           id: selectedFiles.activeFileId as number,
           name: result[0].name as string,
           type: result[0].type as Collection,
-          data: JSON.parse(result[0].data as string),
+          data: data,
           blob_url: "",
         }
+
+        newFile.data = updateImageUrls(newFile.data, blobStore.getBlobURL)
 
         if (result[0].type === "asset") {
           const url = blobStore.getBlobURL(selectedFiles.activeFileId as number)

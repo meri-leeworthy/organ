@@ -7,6 +7,8 @@ import type { Editor } from "@tiptap/react"
 import { useBlobStore } from "./BlobStoreContext"
 
 export function ImageSelector({ editor }: { editor: Editor }) {
+  // it's important that the image html tag has a data-id attribute with the id of the image
+
   const { execute, loading, error, schemaInitialized } = useSqlContext()
   const [images, setImages] = useState<FileData[]>([])
   const blobStore = useBlobStore()
@@ -16,7 +18,11 @@ export function ImageSelector({ editor }: { editor: Editor }) {
       const url = blobStore.getBlobURL(id)
 
       if (url) {
-        editor.chain().focus().setImage({ src: url }).run()
+        editor
+          .chain()
+          .focus()
+          .setImage({ src: url, title: id.toString() })
+          .run()
       }
     },
     [editor]
