@@ -22,10 +22,14 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Button } from "./ui/button"
 import { DropdownMenu, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { ImageSelector } from "./ImageSelector"
-import { useCallback } from "react"
+
 const extensions = [
   Document,
-  Paragraph,
+  Paragraph.configure({
+    HTMLAttributes: {
+      class: "my-4",
+    },
+  }),
   Text,
   Bold,
   Italic,

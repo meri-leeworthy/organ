@@ -260,7 +260,9 @@ export class Client {
       }
 
       const parsedPresignedUrl = new URL(presigned_url)
-      const url = "https://static.organ.is" + parsedPresignedUrl.pathname
+      const userId = parsedPresignedUrl.pathname.split("/")[1]
+      const fileId = parsedPresignedUrl.pathname.split("/")[2]
+      const url = `http://${userId}.on.organ.is/${fileId}`
       return url
     } catch (error) {
       console.error("Upload error:", error)

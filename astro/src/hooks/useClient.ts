@@ -28,8 +28,6 @@ export function useClient() {
   }, [client.userData, client.isLoggedIn])
 
   const logout = async () => {
-    console.log("useClient logging out")
-
     await client.logout()
     setUserData(null)
   }

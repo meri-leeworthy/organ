@@ -19,6 +19,8 @@ import useRender from "@/hooks/useRender"
 import type { ParamsObject } from "sql.js"
 import { EditorComponent as Editor } from "./Editor"
 import type { Schema } from "./FileContainer"
+import { useState } from "react"
+import { toast } from "sonner"
 
 export interface Field {
   name: string
@@ -47,11 +49,14 @@ export const SelectedFileDisplay = ({
   const client = useClient()
   const { render } = useRender()
   const { execute, loading, error, schemaInitialized } = useSqlContext()
+  const [publishLoading, setPublishLoading] = useState(false)
+  const [publishError, setPublishError] = useState<string | null>(null)
 
   const handlePublishFile = async () => {
     if (!schemaInitialized || loading || error || !file) return
     console.log("uploading file", file)
-
+    setPublishLoading(true)
+    setPublishError(null)
     if (file.type === "asset") {
       const blob = await blobStore.getBlob(file.id)
 
@@ -64,16 +69,22 @@ export const SelectedFileDisplay = ({
           file.name,
           file.data.mime_type
         )
-        if (!url) throw new Error("No url found")
-
+        if (!url) {
+          throw new Error("No url found")
+        }
         const newFile = {
           ...file,
           url,
         }
+        console.log("success", newFile)
         setFile(newFile)
         execute("UPDATE file SET url = ? WHERE id = ?;", [url, file.id])
+        setPublishLoading(false)
+        toast.success("File published")
       } catch (error) {
-        console.error("Error fetching blob:", error)
+        setPublishLoading(false)
+        setPublishError((error as Error).message)
+        toast.error((error as Error).message)
       }
       return
     }
@@ -81,19 +92,27 @@ export const SelectedFileDisplay = ({
     if (!file.data || !file.data.body || !file.data.body.content) return
 
     if (file.type === "templateAsset") {
-      let mimeType = "text/css"
-      if (file.name.endsWith(".js")) {
-        mimeType = "text/javascript"
+      try {
+        let mimeType = "text/css"
+        if (file.name.endsWith(".js")) {
+          mimeType = "text/javascript"
+        }
+        const blob = new Blob([file.data.body.content], { type: mimeType })
+        const url = await client.uploadFile(blob, file.name, mimeType)
+        if (!url) throw new Error("No url found")
+        const newFile = {
+          ...file,
+          url,
+        }
+        setFile(newFile)
+        execute("UPDATE file SET url = ? WHERE id = ?;", [url, file.id])
+        setPublishLoading(false)
+        toast.success("File published")
+      } catch (error) {
+        setPublishLoading(false)
+        setPublishError((error as Error).message)
+        toast.error((error as Error).message)
       }
-      const blob = new Blob([file.data.body.content], { type: mimeType })
-      const url = await client.uploadFile(blob, file.name, mimeType)
-      if (!url) throw new Error("No url found")
-      const newFile = {
-        ...file,
-        url,
-      }
-      setFile(newFile)
-      execute("UPDATE file SET url = ? WHERE id = ?;", [url, file.id])
       return
     }
 
@@ -128,8 +147,12 @@ export const SelectedFileDisplay = ({
       }
       setFile(newFile)
       execute("UPDATE file SET url = ? WHERE id = ?;", [url, file.id])
-    } catch (err) {
-      console.error("Error during render:", err)
+      setPublishLoading(false)
+      toast.success("File published")
+    } catch (error) {
+      setPublishLoading(false)
+      setPublishError((error as Error).message)
+      toast.error((error as Error).message)
     }
   }
 
@@ -291,15 +314,28 @@ export const SelectedFileDisplay = ({
 
   return (
     <div className="relative flex flex-col items-center justify-center flex-1 h-screen pt-12 min-w-96 bg-zinc-700">
-      <header className="absolute top-0 left-0 right-0 flex items-center w-full h-12 px-4 mb-auto font-medium border-b border-black shadow-xl text-zinc-200 bg-zinc-900">
+      <header className="absolute top-0 left-0 right-0 flex items-center w-full h-8 max-w-full px-4 mb-auto overflow-hidden font-mono text-sm font-medium border-b border-black shadow-xl text-zinc-300 bg-zinc-900 text-nowrap text-ellipsis">
         {file.name}
-        {file.url}
+
+        <a
+          href={file.url}
+          target="_blank"
+          className="ml-2 overflow-hidden border-pink-400 max-w-72 text-zinc-400 text-nowrap text-ellipsis "
+          rel="noopener noreferrer">
+          {file.url}
+        </a>
         <Button
-          className="ml-auto mr-2 text-black bg-green-400 hover:bg-green-500"
+          className={`font-sans h-6 px-2 ml-auto mr-2 border border-green-400 text-zinc-200 hover:text-zinc-900 hover:bg-green-400 ${
+            publishLoading ? "bg-green-500 text-zinc-900 animate-pulse" : ""
+          }`}
           onClick={handlePublishFile}>
           Publish
         </Button>
-        <Button variant="ghost" size="icon" onClick={onClose}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          className="w-6 h-6">
           <X />
         </Button>
       </header>
