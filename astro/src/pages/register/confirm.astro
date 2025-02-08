@@ -1,0 +1,52 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Confirm Email">
+  <main class="flex flex-col items-center justify-center min-h-screen p-4">
+    <div class="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
+      <h1 class="mb-6 text-2xl font-bold text-center">Email Confirmation</h1>
+      <div id="status" class="text-center">
+        <p class="text-gray-600">Confirming your email...</p>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("token");
+  
+  async function confirmEmail() {
+    const statusElement = document.getElementById("status");
+    if (!statusElement) return;
+
+    if (!token) {
+      statusElement.innerHTML = `
+        <p class="text-red-600">No confirmation token found. Please check your confirmation link.</p>
+      `;
+      return;
+    }
+
+    try {
+      const { Client } = await import("../../lib/Client");
+      const client = new Client();
+      await client.confirmEmail(token);
+      statusElement.innerHTML = `
+        <p class="mb-4 text-green-600">Email confirmed successfully!</p>
+        <p class="text-gray-600">You can now close this window and return to the app.</p>
+        <a href="/" class="inline-block px-4 py-2 mt-4 text-white bg-blue-600 rounded hover:bg-blue-700">
+          Return to App
+        </a>
+      `;
+    } catch (error) {
+      statusElement.innerHTML = `
+        <p class="text-red-600">Failed to confirm email: ${error instanceof Error ? error.message : 'Unknown error'}</p>
+        <p class="mt-2 text-gray-600">Please try again or contact support if the problem persists.</p>
+      `;
+    }
+  }
+
+  // Run confirmation when the page loads
+  confirmEmail();
+</script> 

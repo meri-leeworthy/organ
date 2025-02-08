@@ -55,7 +55,7 @@ export function FileContainer({
 
       // get current file
       try {
-        const query = `SELECT file.id, file.name, file.data, model.name AS type, model.schema
+        const query = `SELECT file.id, file.url, file.name, file.data, model.name AS type, model.schema
             FROM file
             JOIN model ON file.model_id = model.id
             WHERE file.id = ?;`
@@ -72,6 +72,7 @@ export function FileContainer({
           name: result[0].name as string,
           type: result[0].type as Collection,
           data: data,
+          url: result[0].url as string,
           blob_url: "",
         }
 

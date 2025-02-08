@@ -50,13 +50,11 @@ export const SelectedFileDisplay = ({
   const { render } = useRender()
   const { execute, loading, error, schemaInitialized } = useSqlContext()
   const [publishLoading, setPublishLoading] = useState(false)
-  const [publishError, setPublishError] = useState<string | null>(null)
 
   const handlePublishFile = async () => {
     if (!schemaInitialized || loading || error || !file) return
     console.log("uploading file", file)
     setPublishLoading(true)
-    setPublishError(null)
     if (file.type === "asset") {
       const blob = await blobStore.getBlob(file.id)
 
@@ -83,7 +81,6 @@ export const SelectedFileDisplay = ({
         toast.success("File published")
       } catch (error) {
         setPublishLoading(false)
-        setPublishError((error as Error).message)
         toast.error((error as Error).message)
       }
       return
@@ -110,7 +107,6 @@ export const SelectedFileDisplay = ({
         toast.success("File published")
       } catch (error) {
         setPublishLoading(false)
-        setPublishError((error as Error).message)
         toast.error((error as Error).message)
       }
       return
@@ -151,7 +147,6 @@ export const SelectedFileDisplay = ({
       toast.success("File published")
     } catch (error) {
       setPublishLoading(false)
-      setPublishError((error as Error).message)
       toast.error((error as Error).message)
     }
   }

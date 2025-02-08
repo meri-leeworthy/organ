@@ -13,6 +13,11 @@ export function useClient() {
       changePassword: () => {},
       updateStorageRemaining: () => {},
       uploadFile: () => {},
+      register: () => {},
+      deleteFile: () => {},
+      renameFile: () => Promise.resolve(undefined),
+      requestPasswordReset: () => {},
+      confirmEmail: () => {},
     }
   }
 
@@ -40,5 +45,10 @@ export function useClient() {
     changePassword: client.changePassword.bind(client),
     updateStorageRemaining: client.updateStorageRemaining.bind(client),
     uploadFile: client.uploadFile.bind(client),
+    register: client.register.bind(client),
+    deleteFile: client.deleteFile.bind(client),
+    renameFile: client.renameFile.bind(client),
+    requestPasswordReset: client.requestPasswordReset.bind(client),
+    confirmEmail: client.confirmEmail.bind(client),
   }
 }

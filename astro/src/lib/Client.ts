@@ -154,6 +154,33 @@ export class Client {
     this.save()
   }
 
+  async register(email: string, password: string, name: string): Promise<void> {
+    const response = await this.fetchWithRetry(API_BASE_URL + "register", {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+        password,
+        metadata: {
+          name,
+        },
+      }),
+    })
+
+    const { jwt, refresh_token: refreshToken } = await response.json()
+    this.jwt = jwt
+    this.refreshToken = refreshToken
+
+    // Set initial user data
+    this.data = {
+      email,
+      name,
+      state: "unconfirmed",
+      storageRemaining: 1000000000, // 1GB default
+    }
+
+    this.save()
+  }
+
   async logout(): Promise<void> {
     console.log("Client logging out")
     if (!this.refreshToken) return
@@ -214,6 +241,26 @@ export class Client {
     }
   }
 
+  async requestPasswordReset(email: string): Promise<void> {
+    await this.fetchWithRetry(API_BASE_URL + "password-reset/request", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    })
+  }
+
+  async confirmEmail(token: string): Promise<void> {
+    await this.fetchWithRetry(API_BASE_URL + "confirm-email", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    })
+
+    // Update user state after confirmation
+    if (this.data) {
+      this.data.state = "free"
+      this.save()
+    }
+  }
+
   async uploadFile(file: Blob, fileName: string, mimeType: string) {
     console.log("Uploading file:", {
       fileName,
@@ -267,6 +314,54 @@ export class Client {
     } catch (error) {
       console.error("Upload error:", error)
       throw error
+    }
+  }
+
+  async deleteFile(url: string): Promise<void> {
+    // Extract the file path from the URL
+    // URL format is http://{userId}.on.organ.is/{fileId}
+    const urlObj = new URL(url)
+    const userId = urlObj.hostname.split(".")[0]
+    const fileId = urlObj.pathname.substring(1) // Remove leading slash
+    const filePath = `${userId}/${fileId}`
+
+    await this.fetchWithRetry(
+      API_BASE_URL + `file?path=${encodeURIComponent(filePath)}`,
+      {
+        method: "DELETE",
+      }
+    )
+  }
+
+  async renameFile(
+    oldUrl: string,
+    newFileName: string
+  ): Promise<string | undefined> {
+    try {
+      // Extract the file path from the URL
+      // URL format is http://{userId}.on.organ.is/{fileId}
+      const urlObj = new URL(oldUrl)
+      const userId = urlObj.hostname.split(".")[0]
+      const oldFileId = urlObj.pathname.substring(1) // Remove leading slash
+      const oldPath = `${userId}/${oldFileId}`
+
+      // Generate new file ID from the new filename
+      const newFileId = encodeURIComponent(newFileName)
+      const newPath = `${userId}/${newFileId}`
+
+      await this.fetchWithRetry(
+        API_BASE_URL +
+          `file/rename?old_path=${encodeURIComponent(oldPath)}&new_path=${encodeURIComponent(newPath)}`,
+        {
+          method: "PUT",
+        }
+      )
+
+      // Return the new URL
+      return `http://${userId}.on.organ.is/${newFileId}`
+    } catch (error) {
+      console.error("Error in renameFile:", error)
+      return undefined
     }
   }
 }

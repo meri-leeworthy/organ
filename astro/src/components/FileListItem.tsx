@@ -11,6 +11,7 @@ import { DotsVerticalIcon } from "@radix-ui/react-icons"
 import { useClient } from "@/hooks/useClient"
 import { useSqlContext } from "./SqlContext"
 import { File } from "lucide-react"
+import { toast } from "sonner"
 
 export function FileListItem({
   file,
@@ -29,19 +30,48 @@ export function FileListItem({
   const blobStore = useBlobStore()
   const client = useClient()
 
-  const handleRenameFileClick = () => {
+  const handleRenameFileClick = async () => {
     if (!schemaInitialized || loading || error) return
     const newName = prompt("Enter new name:", file.name)
     if (newName) {
-      execute("UPDATE file SET name = ? WHERE id = ?;", [newName, file.id])
-      setFiles(files => files.set(file.id, { ...file, name: newName }))
+      try {
+        // If the file has a URL (is in R2), rename it there first
+        let newUrl: string | undefined = file.url
+        if (file.url) {
+          newUrl = await client.renameFile(file.url, newName)
+        }
+
+        // Update the file in the local database
+        execute("UPDATE file SET name = ?, url = ? WHERE id = ?;", [
+          newName,
+          newUrl || null, // Use null if newUrl is undefined
+          file.id,
+        ])
+        setFiles(files =>
+          files.set(file.id, { ...file, name: newName, url: newUrl || "" })
+        )
+        toast.success("File renamed")
+      } catch (error) {
+        toast.error("Error renaming file")
+        console.error("Error renaming file:", error)
+      }
     }
   }
 
-  const handleDeleteFile = (fileId: number) => {
+  const handleDeleteFile = async (fileId: number) => {
     if (!schemaInitialized || loading || error) return
 
     console.log("deleting file", fileId, file.type)
+
+    // Delete from R2 if the file has a URL
+    if (file.url) {
+      try {
+        await client.deleteFile(file.url)
+      } catch (error) {
+        console.error("Error deleting file from R2:", error)
+        toast.error("Error deleting file from R2")
+      }
+    }
 
     execute(
       `
@@ -53,8 +83,6 @@ export function FileListItem({
 
     // Delete the file from the blob store
     blobStore.deleteBlob(fileId)
-
-    // need to delete from R2 as well but we don't have endpoint for that yet
 
     const newFiles = new Map(files)
     newFiles.delete(fileId)
@@ -68,6 +96,7 @@ export function FileListItem({
     if (file.type === "asset") {
       blobStore.deleteBlob(fileId)
     }
+    toast.success("File deleted")
   }
 
   const handlePublishFile = async (id: number) => {
@@ -93,8 +122,10 @@ export function FileListItem({
       }
       setFiles(files => files.set(file.id, newFile))
       execute("UPDATE file SET url = ? WHERE id = ?;", [url, file.id])
+      toast.success("File published")
     } catch (error) {
       console.error("Error fetching blob:", error)
+      toast.error("Error publishing file")
     }
   }
 
@@ -142,7 +173,7 @@ export function FileListItem({
           <DropdownMenuItem
             className="flex items-center gap-2 px-2 py-1 text-sm rounded cursor-pointer hover:bg-accent hover:outline-none"
             onClick={() => handlePublishFile(file.id)}>
-            Upload to internet
+            Publish
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>
