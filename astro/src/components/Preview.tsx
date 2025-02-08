@@ -13,19 +13,11 @@ export const Preview = ({
   selectedFiles: SelectedFiles
   setSelectedFiles: React.Dispatch<React.SetStateAction<SelectedFiles>>
 }) => {
-  // essentially all files need to be loaded from the database
-  // and then passed to the WASM module. i wonder what memoisation etc i could use
-
-  // maybe instead of selectedFileName it's an object with the file name, type, and the relevant content file
-  // which may or may not be the same as the selected file name
-
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
   const [files, setFiles] = useState<Map<number, FileData>>(new Map())
   const [refresh, setRefresh] = useState<number>(0)
   const debouncedRefresh = useDebounce(refresh, 50)
-  const [previewContent, setPreviewContent] = useState<string>(
-    "Generated HTML will be rendered here"
-  )
+  const [previewContent, setPreviewContent] = useState<string>("")
 
   const {
     execute,
@@ -50,7 +42,7 @@ export const Preview = ({
         const query =
           "SELECT file.id, file.name, file.data, file.url, model.name as type FROM file JOIN model ON file.model_id = model.id;"
         const result = execute(query)
-        // console.log("Preview.tsx: Result from SQL.js:", result)
+
         const files = result.map((file: ParamsObject): [number, FileData] => [
           file.id as number,
           {
@@ -79,7 +71,6 @@ export const Preview = ({
     debouncedRefresh,
   ])
 
-  // Update the preview content when the templates or content files change
   useEffect(() => {
     if (sqlLoading || wasmLoading) return
     if (!selectedFiles.contentFileId) return
@@ -87,11 +78,18 @@ export const Preview = ({
     try {
       const combinedContent = renderLocal(selectedFiles.contentFileId, files)
       setPreviewContent(combinedContent)
+
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          { type: "update", html: combinedContent },
+          "*"
+        )
+      }
     } catch (e) {
       console.error("Error during conversion:", e)
       setPreviewContent("")
     }
-  }, [selectedFiles, wasmLoading, files, sqlLoading, debouncedRefresh]) //,
+  }, [selectedFiles, wasmLoading, files, sqlLoading, debouncedRefresh])
 
   // re-render on keypresses
   useEffect(() => {
@@ -113,9 +111,7 @@ export const Preview = ({
     }
   }, [])
 
-  // Handler to set the active file
   const onLinkClick = (href: string) => {
-    //get the id of the new file
     const newFileId = [...files.values()].find(
       file => file.name === href.slice(1)
     )?.id
@@ -147,35 +143,27 @@ export const Preview = ({
       }
     }
   }
-
-  // Attach event listeners after iframe loads
+  // useEffect(() => {
+  //   const iframe = iframeRef.current
+  //   if (iframe && iframe.contentDocument) {
+  //     iframe.contentDocument.removeEventListener("click", handleIframeClick)
+  //   }
+  // }, [previewContent])
   const handleIframeLoad = () => {
     const iframe = iframeRef.current
-    if (iframe && iframe.contentDocument) {
-      iframe.contentDocument.addEventListener("click", handleIframeClick)
-    }
-  }
+    if (!iframe?.contentWindow) return
 
-  // Clean up event listeners when component unmounts or iframe changes
-  useEffect(() => {
-    const iframe = iframeRef.current
-    if (iframe && iframe.contentDocument) {
-      iframe.contentDocument.removeEventListener("click", handleIframeClick)
-    }
-  }, [previewContent]) // Re-run effect when previewContent changes
+    iframe.contentWindow.postMessage({ type: "initialize" }, "*")
+  }
 
   return (
     <>
       {wasmError ? (
-        <div
-          id="error-message"
-          className="flex items-center justify-center h-screen">
-          <div>
-            <Alert variant="destructive">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{wasmError}</AlertDescription>
-            </Alert>
-          </div>
+        <div className="flex items-center justify-center h-screen">
+          <Alert variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{wasmError}</AlertDescription>
+          </Alert>
         </div>
       ) : (
         <iframe
@@ -183,7 +171,54 @@ export const Preview = ({
           className="items-center w-full h-screen overflow-y-scroll border-l-1"
           id="preview-pane"
           onLoad={handleIframeLoad}
-          srcDoc={previewContent}
+          srcDoc={`<!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { margin: 0; padding: 1rem; font-family: sans-serif; }
+                img { max-width: 100%; height: auto; display: block; }
+              </style>
+              <script>
+                document.addEventListener("DOMContentLoaded", () => {
+                  window.morphdomReady = false;
+                  function loadScript(url, callback) {
+                    const script = document.createElement("script");
+                    script.src = url;
+                    script.onload = callback;
+                    document.head.appendChild(script);
+                  }
+                  
+                  loadScript("https://cdn.jsdelivr.net/npm/morphdom/dist/morphdom-umd.min.js", () => {
+                    window.morphdomReady = true;
+                  });
+                });
+                
+                window.addEventListener("message", (event) => {
+                  if (event.data.type === "update") {
+                    if (!document.body) {
+                      console.error("Morphdom update skipped: document.body is null");
+                      console.log("document:", document)
+                      return;
+                    }
+                    if (!event.data.html) {
+                      console.error("Morphdom update skipped: event.data.html is null");
+                      return;
+                    }
+                    if (!window.morphdomReady) {
+                      console.warn("Morphdom not ready yet, update skipped");
+                      return;
+                    }
+                    morphdom(document.body, event.data.html);
+                  } else if (event.data.type === "initialize") {
+                    window.morphdomReady = true;
+                  }
+                });
+              </script>
+            </head>
+            <body>
+              <p>Loading preview...</p>
+            </body>
+            </html>`}
         />
       )}
     </>
