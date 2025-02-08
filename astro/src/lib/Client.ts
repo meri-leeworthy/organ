@@ -248,6 +248,16 @@ export class Client {
     })
   }
 
+  async confirmPasswordReset(
+    token: string,
+    newPassword: string
+  ): Promise<void> {
+    await this.fetchWithRetry(API_BASE_URL + "password-reset/confirm", {
+      method: "POST",
+      body: JSON.stringify({ token, newPassword }),
+    })
+  }
+
   async confirmEmail(token: string): Promise<void> {
     await this.fetchWithRetry(API_BASE_URL + "confirm-email", {
       method: "POST",
