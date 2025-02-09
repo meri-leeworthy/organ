@@ -1,15 +1,21 @@
+import { toast } from "sonner"
 import { API_BASE_URL } from "./consts"
 
 export interface UserData {
-  email?: string
-  name?: string
-  state: "unconfirmed" | "free"
+  email: string
+  username?: string
+  state: string
+  storageUsed: number
   storageRemaining: number
+  metadata: any
 }
 
 const defaultUserData: UserData = {
+  email: "",
   state: "unconfirmed",
+  storageUsed: 0,
   storageRemaining: 0,
+  metadata: {},
 }
 
 export class Client {
@@ -146,9 +152,12 @@ export class Client {
     const parsedResponse = await userResponse.json()
 
     this.data = {
-      ...parsedResponse,
-      name: parsedResponse.metadata.name,
+      email: parsedResponse.email,
+      username: parsedResponse.username,
+      state: parsedResponse.state,
+      storageUsed: parsedResponse.storage_used,
       storageRemaining: 1000000000 - parsedResponse.storage_used,
+      metadata: parsedResponse.metadata,
     }
 
     this.save()
@@ -173,9 +182,13 @@ export class Client {
     // Set initial user data
     this.data = {
       email,
-      name,
+      username: name,
       state: "unconfirmed",
+      storageUsed: 0,
       storageRemaining: 1000000000, // 1GB default
+      metadata: {
+        name,
+      },
     }
 
     this.save()
@@ -204,6 +217,23 @@ export class Client {
       method: "POST",
       body: JSON.stringify({ currentPassword, newPassword }),
     })
+  }
+
+  async getUser(): Promise<UserData> {
+    const response = await this.fetchWithRetry(API_BASE_URL + "user")
+    const parsedResponse = await response.json()
+
+    this.data = {
+      email: parsedResponse.email,
+      username: parsedResponse.username,
+      state: parsedResponse.state,
+      storageUsed: parsedResponse.storage_used,
+      storageRemaining: 1000000000 - parsedResponse.storage_used,
+      metadata: parsedResponse.metadata,
+    }
+
+    this.save()
+    return this.data
   }
 
   private async refreshJWT(): Promise<void> {
@@ -272,6 +302,11 @@ export class Client {
   }
 
   async uploadFile(file: Blob, fileName: string, mimeType: string) {
+    if (!this.data || !this.data.username) {
+      toast.error("No user data available")
+      throw new Error("No user data available")
+    }
+
     console.log("Uploading file:", {
       fileName,
       size: file.size,
@@ -317,9 +352,8 @@ export class Client {
       }
 
       const parsedPresignedUrl = new URL(presigned_url)
-      const userId = parsedPresignedUrl.pathname.split("/")[1]
       const fileId = parsedPresignedUrl.pathname.split("/")[2]
-      const url = `http://${userId}.on.organ.is/${fileId}`
+      const url = `http://${this.data.username}.on.organ.is/${fileId}`
       return url
     } catch (error) {
       console.error("Upload error:", error)

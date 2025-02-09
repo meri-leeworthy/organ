@@ -176,7 +176,7 @@ export const SelectedFileDisplay = ({
   const renderFieldWithLabel = (field: Field) => {
     if (field.type === "html")
       return (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2" key={`${file.id}-${field.name}`}>
           <Label htmlFor="body" className="capitalize">
             Body
           </Label>
@@ -189,7 +189,7 @@ export const SelectedFileDisplay = ({
       )
 
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2" key={`${file.id}-${field.name}`}>
         <Label htmlFor={field.name} className="capitalize">
           {field.name}
         </Label>

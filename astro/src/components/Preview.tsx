@@ -8,16 +8,17 @@ import useRender from "@/hooks/useRender.js"
 
 export const Preview = ({
   selectedFiles,
-  setSelectedFiles,
+  // setSelectedFiles,
 }: {
   selectedFiles: SelectedFiles
   setSelectedFiles: React.Dispatch<React.SetStateAction<SelectedFiles>>
 }) => {
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
-  const [files, setFiles] = useState<Map<number, FileData>>(new Map())
-  const [refresh, setRefresh] = useState<number>(0)
-  const debouncedRefresh = useDebounce(refresh, 50)
-  const [previewContent, setPreviewContent] = useState<string>("")
+  // const [files, setFiles] = useState<Map<number, FileData>>(new Map())
+  // const [refresh, setRefresh] = useState<number>(0)
+  // const debouncedRefresh = useDebounce(refresh, 50)
+  // const [previewContent, setPreviewContent] = useState<string>("")
+  const [iframeLoaded, setIframeLoaded] = useState<boolean>(false)
 
   const {
     execute,
@@ -27,13 +28,68 @@ export const Preview = ({
   } = useSqlContext()
   const { loading: wasmLoading, error: wasmError, renderLocal } = useRender()
 
+  // useEffect(() => {
+  //   if (
+  //     !schemaInitialized ||
+  //     sqlLoading ||
+  //     sqlError ||
+  //     wasmLoading ||
+  //     wasmError
+  //   )
+  //     return
+
+  //   const fetchData = async () => {
+  //     try {
+  //       const query =
+  //         "SELECT file.id, file.name, file.data, file.url, model.name as type FROM file JOIN model ON file.model_id = model.id;"
+  //       const result = execute(query)
+
+  //       const files = result.map((file: ParamsObject): [number, FileData] => [
+  //         file.id as number,
+  //         {
+  //           id: file.id as number,
+  //           name: file.name?.toString() || "",
+  //           type: file.type?.toString() as FileData["type"],
+  //           data: JSON.parse(file.data?.toString() || "{}"),
+  //           url: file.url?.toString() || "",
+  //         },
+  //       ])
+
+  //       const filesMap = new Map(files)
+  //       setFiles(filesMap)
+  //     } catch (err) {
+  //       console.error("Error fetching data:", err)
+  //     }
+  //   }
+
+  //   fetchData()
+  // }, [
+  //   execute,
+  //   sqlLoading,
+  //   sqlError,
+  //   schemaInitialized,
+  //   selectedFiles,
+  //   debouncedRefresh,
+  // ])
+
+  function getBodyContent(htmlString: string) {
+    // Create a temporary DOM container
+    const temp = document.createElement("html")
+    temp.innerHTML = htmlString
+
+    // Return only what's inside <body>, ignoring the root <html> and <head>
+    return temp.querySelector("body")?.innerHTML || htmlString
+  }
+
   useEffect(() => {
     if (
       !schemaInitialized ||
       sqlLoading ||
       sqlError ||
       wasmLoading ||
-      wasmError
+      wasmError ||
+      !iframeLoaded ||
+      !selectedFiles.contentFileId
     )
       return
 
@@ -55,104 +111,128 @@ export const Preview = ({
         ])
 
         const filesMap = new Map(files)
-        setFiles(filesMap)
+        // setFiles(filesMap)
       } catch (err) {
         console.error("Error fetching data:", err)
       }
     }
 
     fetchData()
-  }, [
-    execute,
-    sqlLoading,
-    sqlError,
-    schemaInitialized,
-    selectedFiles,
-    debouncedRefresh,
-  ])
 
-  useEffect(() => {
-    if (sqlLoading || wasmLoading) return
-    if (!selectedFiles.contentFileId) return
+    const handleRender = () => {
+      try {
+        const query =
+          "SELECT file.id, file.name, file.data, file.url, model.name as type FROM file JOIN model ON file.model_id = model.id;"
+        const result = execute(query)
 
-    try {
-      const combinedContent = renderLocal(selectedFiles.contentFileId, files)
-      setPreviewContent(combinedContent)
+        const files = result.map((file: ParamsObject): [number, FileData] => [
+          file.id as number,
+          {
+            id: file.id as number,
+            name: file.name?.toString() || "",
+            type: file.type?.toString() as FileData["type"],
+            data: JSON.parse(file.data?.toString() || "{}"),
+            url: file.url?.toString() || "",
+          },
+        ])
 
-      if (iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(
-          { type: "update", html: combinedContent },
-          "*"
+        const filesMap = new Map(files)
+
+        const combinedContent = renderLocal(
+          selectedFiles.contentFileId,
+          filesMap
         )
+        // setPreviewContent(combinedContent)
+
+        const bodyContent = getBodyContent(combinedContent)
+        console.log("bodyContent", bodyContent)
+
+        if (iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            { type: "update", html: bodyContent },
+            "*"
+          )
+        }
+      } catch (e) {
+        console.error("Error during conversion:", e)
+        // setPreviewContent("")
       }
-    } catch (e) {
-      console.error("Error during conversion:", e)
-      setPreviewContent("")
     }
-  }, [selectedFiles, wasmLoading, files, sqlLoading, debouncedRefresh])
+    const delayedHandleRender = () => setTimeout(handleRender, 50)
 
-  // re-render on keypresses
-  useEffect(() => {
-    const handleKeyDown = () => {
-      setRefresh(refresh => refresh + 1) // Trigger rerender by updating state
-    }
-
-    const handleClick = () => {
-      setRefresh(refresh => refresh + 1)
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-    window.addEventListener("click", handleClick)
+    window.addEventListener("keydown", delayedHandleRender)
+    window.addEventListener("click", delayedHandleRender)
 
     // Clean up the event listener on component unmount
     return () => {
-      window.removeEventListener("keydown", handleKeyDown)
-      window.removeEventListener("click", handleClick)
+      window.removeEventListener("keydown", delayedHandleRender)
+      window.removeEventListener("click", delayedHandleRender)
     }
-  }, [])
+  }, [selectedFiles, wasmLoading, sqlLoading, iframeLoaded])
 
-  const onLinkClick = (href: string) => {
-    const newFileId = [...files.values()].find(
-      file => file.name === href.slice(1)
-    )?.id
-    if (!newFileId) {
-      console.error("File not found:", href)
-      return
-    }
-    setSelectedFiles({
-      activeFileId: newFileId,
-      contentFileId: newFileId,
-    })
-  }
-
-  // handle link clicks inside the iframe
-  const handleIframeClick = (event: MouseEvent) => {
-    const target = event.target as HTMLElement
-
-    if (target.tagName.toLowerCase() === "a") {
-      const href = target.getAttribute("href")
-      if (href) {
-        const isInternal = href.startsWith("/")
-        if (isInternal) {
-          event.preventDefault()
-          onLinkClick(href)
-        } else {
-          // Optionally handle external links, e.g., open in new tab
-          // window.open(href, '_blank')
-        }
-      }
-    }
-  }
+  // // re-render on keypresses
   // useEffect(() => {
-  //   const iframe = iframeRef.current
-  //   if (iframe && iframe.contentDocument) {
-  //     iframe.contentDocument.removeEventListener("click", handleIframeClick)
+  //   const handleKeyDown = () => {
+  //     setRefresh(refresh => refresh + 1) // Trigger rerender by updating state
   //   }
-  // }, [previewContent])
+
+  //   const handleClick = () => {
+  //     setRefresh(refresh => refresh + 1)
+  //   }
+
+  // window.addEventListener("keydown", handleKeyDown)
+  // window.addEventListener("click", handleClick)
+
+  // // Clean up the event listener on component unmount
+  // return () => {
+  //   window.removeEventListener("keydown", handleKeyDown)
+  //   window.removeEventListener("click", handleClick)
+  // }
+  // }, [])
+
+  // const onLinkClick = (href: string) => {
+  //   const newFileId = [...files.values()].find(
+  //     file => file.name === href.slice(1)
+  //   )?.id
+  //   if (!newFileId) {
+  //     console.error("File not found:", href)
+  //     return
+  //   }
+  //   setSelectedFiles({
+  //     activeFileId: newFileId,
+  //     contentFileId: newFileId,
+  //   })
+  // }
+
+  // // handle link clicks inside the iframe
+  // const handleIframeClick = (event: MouseEvent) => {
+  //   const target = event.target as HTMLElement
+
+  //   if (target.tagName.toLowerCase() === "a") {
+  //     const href = target.getAttribute("href")
+  //     if (href) {
+  //       const isInternal = href.startsWith("/")
+  //       if (isInternal) {
+  //         event.preventDefault()
+  //         onLinkClick(href)
+  //       } else {
+  //         // Optionally handle external links, e.g., open in new tab
+  //         // window.open(href, '_blank')
+  //       }
+  //     }
+  //   }
+  // }
+  // // useEffect(() => {
+  // //   const iframe = iframeRef.current
+  // //   if (iframe && iframe.contentDocument) {
+  // //     iframe.contentDocument.removeEventListener("click", handleIframeClick)
+  // //   }
+  // // }, [previewContent])
+
   const handleIframeLoad = () => {
+    setIframeLoaded(true)
     const iframe = iframeRef.current
     if (!iframe?.contentWindow) return
-
     iframe.contentWindow.postMessage({ type: "initialize" }, "*")
   }
 
@@ -179,7 +259,21 @@ export const Preview = ({
                 img { max-width: 100%; height: auto; display: block; }
               </style>
               <script>
+                // This runs right after the DOM is parsed
+                const observer = new MutationObserver((mutations) => {
+                  mutations.forEach((mutation) => {
+                    console.log('[MutationObserver]', mutation);
+                  });
+                });
+                
+                observer.observe(document.documentElement, {
+                  childList: true,
+                  subtree: true,
+                });
+                
+                console.log("rendering iframe")
                 document.addEventListener("DOMContentLoaded", () => {
+                  console.log("dom content loaded")
                   window.morphdomReady = false;
                   function loadScript(url, callback) {
                     const script = document.createElement("script");
@@ -194,10 +288,16 @@ export const Preview = ({
                 });
                 
                 window.addEventListener("message", (event) => {
-                  if (event.data.type === "update") {
+                  console.log("message received", event)
+                  try {
+                    if (event.data.type === "update") {
+                      if (document.readyState !== "complete") {
+                        console.warn("Skipping update, document not fully loaded yet.");
+                      return;
+                    }
                     if (!document.body) {
-                      console.error("Morphdom update skipped: document.body is null");
                       console.log("document:", document)
+                      console.error("Morphdom update skipped: document.body is null");
                       return;
                     }
                     if (!event.data.html) {
@@ -208,11 +308,17 @@ export const Preview = ({
                       console.warn("Morphdom not ready yet, update skipped");
                       return;
                     }
-                    morphdom(document.body, event.data.html);
-                  } else if (event.data.type === "initialize") {
-                    window.morphdomReady = true;
+                    console.log("morphdom")
+                    morphdom(document.body, event.data.html, {
+                      childrenOnly: true
+                    });
+                    } else if (event.data.type === "initialize") {
+                      window.morphdomReady = true;
+                    }
+                  } catch (e) {
+                    console.error("Error during message", e)
                   }
-                });
+                })
               </script>
             </head>
             <body>

@@ -109,11 +109,13 @@ export function NavUser() {
               <Avatar className="w-8 h-8 rounded-lg ">
                 {/* <AvatarImage src={user?.avatar} alt={user?.name} /> */}
                 <AvatarFallback className="rounded-lg bg-zinc-700">
-                  {user?.name?.charAt(0)}
+                  {user?.metadata?.name?.charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-sm leading-tight text-left">
-                <span className="font-semibold truncate">{user?.name}</span>
+                <span className="font-semibold truncate">
+                  {user?.metadata?.name}
+                </span>
                 <span className="text-xs truncate">{user?.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
@@ -129,11 +131,13 @@ export function NavUser() {
                 <Avatar className="w-8 h-8 rounded-lg">
                   {/* <AvatarImage src={user.avatar} alt={user.name} /> */}
                   <AvatarFallback className="rounded-lg">
-                    {user?.name?.charAt(0)}
+                    {user?.metadata?.name?.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-sm leading-tight text-left">
-                  <span className="font-semibold truncate">{user?.name}</span>
+                  <span className="font-semibold truncate">
+                    {user?.metadata?.name}
+                  </span>
                   <span className="text-xs truncate">{user?.email}</span>
                 </div>
               </div>

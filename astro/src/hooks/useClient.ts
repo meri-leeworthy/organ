@@ -12,6 +12,7 @@ export function useClient() {
       logout: () => {},
       changePassword: () => {},
       updateStorageRemaining: () => {},
+      getUser: () => {},
       uploadFile: () => {},
       register: () => {},
       deleteFile: () => {},
@@ -28,9 +29,12 @@ export function useClient() {
   const [userData, setUserData] = useState<UserData | null>(client.userData)
 
   useEffect(() => {
-    // Update userData when client.data changes
-    setUserData(client.userData)
-  }, [client.userData, client.isLoggedIn])
+    const getUser = async () => {
+      const user = await client.getUser()
+      setUserData(user)
+    }
+    getUser()
+  }, [])
 
   const logout = async () => {
     await client.logout()

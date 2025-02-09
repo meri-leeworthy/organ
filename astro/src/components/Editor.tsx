@@ -25,11 +25,7 @@ import { ImageSelector } from "./ImageSelector"
 
 const extensions = [
   Document,
-  Paragraph.configure({
-    HTMLAttributes: {
-      class: "my-4",
-    },
-  }),
+  Paragraph,
   Text,
   Bold,
   Italic,
@@ -101,7 +97,7 @@ export function Toolbar({ editor }: { editor: Editor }) {
         </ToggleGroupItem>
       </ToggleGroup>
       <DropdownMenu>
-        <DropdownMenuTrigger>
+        <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon">
             <ImageIcon className="w-4 h-4" />
           </Button>
