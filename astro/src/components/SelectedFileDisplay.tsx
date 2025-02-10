@@ -21,6 +21,7 @@ import { EditorComponent as Editor } from "./Editor"
 import type { Schema } from "./FileContainer"
 import { useState } from "react"
 import { toast } from "sonner"
+import { SidebarTrigger } from "./ui/sidebar"
 
 export interface Field {
   name: string
@@ -50,6 +51,8 @@ export const SelectedFileDisplay = ({
   const { render } = useRender()
   const { execute, loading, error, schemaInitialized } = useSqlContext()
   const [publishLoading, setPublishLoading] = useState(false)
+
+  console.log("schema", schema)
 
   const handlePublishFile = async () => {
     if (!schemaInitialized || loading || error || !file) return
@@ -294,7 +297,10 @@ export const SelectedFileDisplay = ({
             className="flex-grow h-20 font-mono resize-none"
             placeholder="Enter your content here..."
             value={value || ""}
-            onChange={e => handleDataChange(field.name, e.target.value)}
+            onInput={e => {
+              console.log("handling change", field, e.currentTarget.value)
+              handleDataChange(field.name, e.currentTarget.value)
+            }}
           />
         )
       default:
@@ -310,22 +316,25 @@ export const SelectedFileDisplay = ({
   return (
     <div className="relative flex flex-col items-center justify-center flex-1 h-screen pt-12 min-w-96 bg-zinc-700">
       <header className="absolute top-0 left-0 right-0 flex items-center w-full h-8 max-w-full px-4 mb-auto overflow-hidden font-mono text-sm font-medium border-b border-black shadow-xl text-zinc-300 bg-zinc-900 text-nowrap text-ellipsis">
+        <SidebarTrigger className="w-6 h-6 mr-2" />
         {file.name}
 
         <a
           href={file.url}
           target="_blank"
-          className="ml-2 overflow-hidden border-pink-400 max-w-72 text-zinc-400 text-nowrap text-ellipsis "
+          className="flex-grow ml-2 mr-auto overflow-hidden border-pink-400 text-zinc-400 text-nowrap text-ellipsis"
           rel="noopener noreferrer">
           {file.url}
         </a>
-        <Button
-          className={`font-sans h-6 px-2 ml-auto mr-2 border border-green-400 text-zinc-200 hover:text-zinc-900 hover:bg-green-400 ${
-            publishLoading ? "bg-green-500 text-zinc-900 animate-pulse" : ""
-          }`}
-          onClick={handlePublishFile}>
-          Publish
-        </Button>
+        {file.type !== "template" && (
+          <Button
+            className={`font-sans h-6 px-2 mr-2 ml-2 border border-green-400 text-zinc-200 hover:text-zinc-900 hover:bg-green-400 ${
+              publishLoading ? "bg-green-500 text-zinc-900 animate-pulse" : ""
+            }`}
+            onClick={handlePublishFile}>
+            Publish
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"

@@ -47,8 +47,7 @@ export function EditorComponent({
     content: file.data?.body?.content || "",
     editorProps: {
       attributes: {
-        class:
-          "prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl focus:outline-none",
+        class: "prose prose-sm sm:prose-base focus:outline-none",
       },
     },
     shouldRerenderOnTransaction: true,

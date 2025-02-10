@@ -1,6 +1,6 @@
 import type { SelectedFiles } from "@/lib/types"
 import { FileList } from "./FileList"
-import { Sidebar, SidebarContent } from "./ui/sidebar"
+import { Sidebar, SidebarContent, SidebarTrigger } from "./ui/sidebar"
 import { Button } from "./ui/button"
 import { NavUser } from "./NavUser"
 
@@ -38,6 +38,12 @@ export function AppSidebar({
             <FileList
               key="page"
               type="page"
+              selectedFiles={selectedFiles}
+              setSelectedFiles={setSelectedFiles}
+            />
+            <FileList
+              key="post"
+              type="post"
               selectedFiles={selectedFiles}
               setSelectedFiles={setSelectedFiles}
             />

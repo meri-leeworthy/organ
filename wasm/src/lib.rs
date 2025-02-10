@@ -111,10 +111,12 @@ pub fn render(current_file_id: i32, context: &JsValue) -> Result<String, JsValue
     // Convert content based on type
     let html_output = match content_type.as_str() {
         "html" => content,
-        "plaintext" | _ => match markdown_to_html(&content, &images, &template_assets) {
+        "plaintext" => content,
+        "markdown" | _ => match markdown_to_html(&content, &images, &template_assets) {
             Ok(output) => output,
             Err(e) => return Err(e.into()),
         },
+        _ => return Err(JsValue::from_str("Invalid content type")),
     };
 
     // convert ContentRecord to JSON and add "content" key with "html_output" as value
@@ -123,6 +125,16 @@ pub fn render(current_file_id: i32, context: &JsValue) -> Result<String, JsValue
 
     for (key, value) in &current_file.data {
         render_context[key] = value.clone();
+    }
+
+    if current_file.file_type == Collection::Page {
+        // add posts to render context
+        let posts: Vec<ContentData> = context
+            .iter()
+            .filter(|(_, v)| matches!(v.file_type, Collection::Post))
+            .map(|(_, v)| v.clone())
+            .collect();
+        render_context["posts"] = json!(posts);
     }
 
     // Render the template with the context
@@ -163,6 +175,8 @@ fn render_template(
     if let Err(e) = handlebars.register_template_string("template", template_content) {
         return Err(format!("Template error: {}", e));
     }
+
+    log(&format!("render_context: {:?}", render_context));
 
     // Render the template
     match handlebars.render("template", render_context) {
@@ -207,6 +221,7 @@ fn parse_file(file: &UnparsedContentData) -> Result<ContentData, serde_json::Err
         "page" => Collection::Page,
         "templateAsset" => Collection::TemplateAsset,
         "partial" => Collection::Partial,
+        "post" => Collection::Post,
         _ => {
             return Err(serde_json::Error::custom(format!(
                 "Invalid file type for file: {:?}",

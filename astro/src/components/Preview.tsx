@@ -3,21 +3,15 @@ import { useSqlContext } from "./SqlContext.jsx"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert.jsx"
 import type { FileData, SelectedFiles } from "../lib/types.jsx"
 import type { ParamsObject } from "sql.js"
-import { useDebounce } from "@/hooks/useDebounce.js"
 import useRender from "@/hooks/useRender.js"
 
 export const Preview = ({
   selectedFiles,
-  // setSelectedFiles,
 }: {
   selectedFiles: SelectedFiles
   setSelectedFiles: React.Dispatch<React.SetStateAction<SelectedFiles>>
 }) => {
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
-  // const [files, setFiles] = useState<Map<number, FileData>>(new Map())
-  // const [refresh, setRefresh] = useState<number>(0)
-  // const debouncedRefresh = useDebounce(refresh, 50)
-  // const [previewContent, setPreviewContent] = useState<string>("")
   const [iframeLoaded, setIframeLoaded] = useState<boolean>(false)
 
   const {
@@ -28,57 +22,17 @@ export const Preview = ({
   } = useSqlContext()
   const { loading: wasmLoading, error: wasmError, renderLocal } = useRender()
 
-  // useEffect(() => {
-  //   if (
-  //     !schemaInitialized ||
-  //     sqlLoading ||
-  //     sqlError ||
-  //     wasmLoading ||
-  //     wasmError
-  //   )
-  //     return
-
-  //   const fetchData = async () => {
-  //     try {
-  //       const query =
-  //         "SELECT file.id, file.name, file.data, file.url, model.name as type FROM file JOIN model ON file.model_id = model.id;"
-  //       const result = execute(query)
-
-  //       const files = result.map((file: ParamsObject): [number, FileData] => [
-  //         file.id as number,
-  //         {
-  //           id: file.id as number,
-  //           name: file.name?.toString() || "",
-  //           type: file.type?.toString() as FileData["type"],
-  //           data: JSON.parse(file.data?.toString() || "{}"),
-  //           url: file.url?.toString() || "",
-  //         },
-  //       ])
-
-  //       const filesMap = new Map(files)
-  //       setFiles(filesMap)
-  //     } catch (err) {
-  //       console.error("Error fetching data:", err)
-  //     }
-  //   }
-
-  //   fetchData()
-  // }, [
-  //   execute,
-  //   sqlLoading,
-  //   sqlError,
-  //   schemaInitialized,
-  //   selectedFiles,
-  //   debouncedRefresh,
-  // ])
-
   function getBodyContent(htmlString: string) {
     // Create a temporary DOM container
     const temp = document.createElement("html")
     temp.innerHTML = htmlString
 
+    const linkTags = Array.from(temp.querySelectorAll("link"))
+      .map(link => link.outerHTML)
+      .join("")
+    console.log("linkTags", linkTags)
     // Return only what's inside <body>, ignoring the root <html> and <head>
-    return temp.querySelector("body")?.innerHTML || htmlString
+    return linkTags + temp.querySelector("body")?.innerHTML || htmlString
   }
 
   useEffect(() => {
@@ -87,37 +41,10 @@ export const Preview = ({
       sqlLoading ||
       sqlError ||
       wasmLoading ||
-      wasmError ||
       !iframeLoaded ||
       !selectedFiles.contentFileId
     )
       return
-
-    const fetchData = async () => {
-      try {
-        const query =
-          "SELECT file.id, file.name, file.data, file.url, model.name as type FROM file JOIN model ON file.model_id = model.id;"
-        const result = execute(query)
-
-        const files = result.map((file: ParamsObject): [number, FileData] => [
-          file.id as number,
-          {
-            id: file.id as number,
-            name: file.name?.toString() || "",
-            type: file.type?.toString() as FileData["type"],
-            data: JSON.parse(file.data?.toString() || "{}"),
-            url: file.url?.toString() || "",
-          },
-        ])
-
-        const filesMap = new Map(files)
-        // setFiles(filesMap)
-      } catch (err) {
-        console.error("Error fetching data:", err)
-      }
-    }
-
-    fetchData()
 
     const handleRender = () => {
       try {
@@ -142,7 +69,8 @@ export const Preview = ({
           selectedFiles.contentFileId,
           filesMap
         )
-        // setPreviewContent(combinedContent)
+
+        console.log("full content", combinedContent)
 
         const bodyContent = getBodyContent(combinedContent)
         console.log("bodyContent", bodyContent)
@@ -169,26 +97,6 @@ export const Preview = ({
       window.removeEventListener("click", delayedHandleRender)
     }
   }, [selectedFiles, wasmLoading, sqlLoading, iframeLoaded])
-
-  // // re-render on keypresses
-  // useEffect(() => {
-  //   const handleKeyDown = () => {
-  //     setRefresh(refresh => refresh + 1) // Trigger rerender by updating state
-  //   }
-
-  //   const handleClick = () => {
-  //     setRefresh(refresh => refresh + 1)
-  //   }
-
-  // window.addEventListener("keydown", handleKeyDown)
-  // window.addEventListener("click", handleClick)
-
-  // // Clean up the event listener on component unmount
-  // return () => {
-  //   window.removeEventListener("keydown", handleKeyDown)
-  //   window.removeEventListener("click", handleClick)
-  // }
-  // }, [])
 
   // const onLinkClick = (href: string) => {
   //   const newFileId = [...files.values()].find(

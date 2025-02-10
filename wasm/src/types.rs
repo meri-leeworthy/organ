@@ -3,13 +3,14 @@ use serde_json::{Map, Value};
 use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Collection {
     Asset,
     Template,
     Page,
     TemplateAsset,
     Partial,
+    Post,
 }
 
 impl Display for Collection {
@@ -20,6 +21,7 @@ impl Display for Collection {
             Collection::Page => write!(f, "page"),
             Collection::TemplateAsset => write!(f, "templateAsset"),
             Collection::Partial => write!(f, "partial"),
+            Collection::Post => write!(f, "post"),
         }
     }
 }

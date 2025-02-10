@@ -45,7 +45,7 @@ export function FileList({
   const { execute, loading, error, schemaInitialized } = useSqlContext()
   const blobStore = useBlobStore()
 
-  console.log("files", files)
+  // console.log("files", files)
 
   useEffect(() => {
     if (!schemaInitialized || loading || error) return

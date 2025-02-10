@@ -72,10 +72,12 @@ export default function useRender() {
       })
 
       try {
-        return wasmModule.render(contentFileId, context)
+        const result = wasmModule.render(contentFileId, context)
+        setError("")
+        return result
       } catch (e) {
         console.error("Failed to render:", e)
-        setError("Failed to render.")
+        setError("Failed to render: " + e)
         return ""
       }
     },

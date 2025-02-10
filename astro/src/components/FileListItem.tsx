@@ -147,7 +147,9 @@ export function FileListItem({
           setSelectedFiles(selectedFiles => ({
             activeFileId: file.id,
             contentFileId:
-              file.type === "page" ? file.id : selectedFiles.contentFileId,
+              file.type === "page" || file.type === "post"
+                ? file.id
+                : selectedFiles.contentFileId,
           }))
         }}>
         <File className="w-4 h-4" />
