@@ -1,19 +1,36 @@
 ---
+import { ViewTransitions } from 'astro:transitions';
+import '@/styles/globals.css';
+
+
 interface Props {
-  title: string;
+	title: string;
 }
 
 const { title } = Astro.props;
 ---
 
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title}</title>
-  </head>
-  <body>
-    <slot />
-  </body>
-</html> 
+<html lang="en" class="scroll-smooth">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="description" content="Organ Pages - Brutalist Website Builder">
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+		<ViewTransitions />
+	</head>
+	<body class="font-sans text-white bg-black">
+		<slot />
+	</body>
+</html>
+
+<style is:global>
+	:root {
+		--brand-color: #00e615;
+	}
+	body {
+		font-family: 'Work Sans', sans-serif;
+	}
+</style>

@@ -1,4 +1,6 @@
 ---
+import { Button } from '@/components/ui/button'
+import { Faq } from '@/components/FAQ'
 import '@/styles/globals.css'
 ---
 
@@ -8,8 +10,51 @@ import '@/styles/globals.css'
   <meta charset="UTF-8">
   <title>Organ</title>
 </head>
-<body>
-  <h1>Organ</h1>
-  <p>Organ is a static site generator for the web.</p>
+<body class="flex flex-col">
+  <header class="w-full relative h-[95vh] flex flex-col items-center justify-center">
+    <img src="/splotch.svg" class="absolute inset-auto h-4/5 blur-[200px]" />
+    <h1 class="relative z-10 font-black text-8xl right-40">organ</h1>
+    <div class="relative z-10 flex flex-col gap-3 text-2xl font-medium left-24 top-10">
+      <p>pages, online in seconds.</p>
+      <p>post. done.</p>
+    </div>
+  </header>
+  <main class="flex flex-col w-full -mt-16">
+  <section class="flex flex-col items-center justify-center w-full gap-12 mx-auto mb-16">
+    <p class="text-4xl font-light w-[28rem]"><b class="font-black">Organ</b> is a platform for easily creating and publishing websites, blogs, portfolios, and more.</p>
+    <p class="text-2xl font-light w-[40rem]">Unlike most website builders, Organ generates web pages from your content completely in your browser and uploads them directly to the web.</p>
+    <p class="text-2xl font-light w-[28rem]">This gives you <strong class="font-bold">total control</strong> over your data and allows you to publish your pages online in seconds at a much lower cost than other platforms.</p>
+  </section>
+  <h2 class="self-center mb-6 text-4xl font-medium">Pricing</h2>
+  <section class="flex gap-4 p-4 mx-auto mb-16 h-[30rem]">
+    <div class="flex flex-col h-full gap-4 p-4 transition-all duration-300 bg-gray-100 border w-80 rounded-3xl hover:shadow-xl">
+      <h3 class="text-2xl font-medium">Free</h3>
+      <p class="text-2xl font-light">Try out the basic features.</p>
+      <ul class="text-lg font-light list-disc list-inside">
+        <li>Create pages and posts</li>
+        <li>20MB storage</li>
+        <li>HTTPS</li>
+      </ul>
+      <Button className="text-2xl font-regular mt-auto h-12">Get Started</Button>
+    </div>
+    <div class="flex flex-col h-full gap-4 p-4 transition-all duration-300 bg-gray-100 border w-80 rounded-3xl hover:shadow-xl">
+      <h3 class="text-2xl font-medium">Personal</h3>
+      <p class="text-2xl font-light">For blogs, portfolios, and more.</p>
+      <ul class="text-lg font-light list-disc list-inside">
+        <li>Custom Domains</li>
+        <li>5GB storage</li>
+        <li>Support via email</li>
+        <li>Early access to new features</li>
+      </ul>
+      <p class="text-sm font-light">Introductory price:</p>
+      <p class="font-light"><b class="pr-2 text-4xl font-bold">$5</b>/ month</p>
+      <Button className="text-2xl font-regular mt-auto bg-green-600 h-12">Sign Up</Button>
+    </div>
+  </section>
+  <section class="flex flex-col items-center justify-center w-full max-w-lg gap-12 mx-auto mb-16">
+    <h2 class="text-4xl font-medium">FAQ</h2>
+    <Faq client:load />
+  </section>
+  </main>
 </body>
 </html>

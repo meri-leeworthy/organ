@@ -90,7 +90,7 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
           {
             query: `INSERT OR IGNORE INTO model (id, name, is_system, schema) VALUES
             (1, 'page', TRUE, '{"fields": [{"name": "template", "type": "number", "required": true}, {"name": "title", "type": "string", "required": true}, {"name": "body", "type": "html", "required": true}]}'),
-            (2, 'post', TRUE, '{"fields": [{"name": "template", "type": "number", "required": true}, {"name": "title", "type": "string", "required": true}, {"name": "body", "type": "html", "required": true}, {"name": "date", "type": "date", "required": true}, {"name": "tags", "type": "array"}]}'),
+            (2, 'post', TRUE, '{"fields": [{"name": "title", "type": "string", "required": true}, {"name": "body", "type": "html", "required": true}, {"name": "date", "type": "date", "required": true}, {"name": "tags", "type": "array"}]}'),
             (3, 'templateAsset', TRUE, '{"fields": [{"name": "body", "type": "plaintext"}]}'),
             (4, 'template', TRUE, '{"fields": [{"name": "body", "type": "plaintext"}]}'),
             (5, 'partial', TRUE, '{"fields": [{"name": "body", "type": "plaintext"}]}'),

@@ -332,7 +332,7 @@ export const SelectedFileDisplay = ({
               publishLoading ? "bg-green-500 text-zinc-900 animate-pulse" : ""
             }`}
             onClick={handlePublishFile}>
-            Publish
+            Post
           </Button>
         )}
         <Button

@@ -167,19 +167,6 @@ export const Preview = ({
                 img { max-width: 100%; height: auto; display: block; }
               </style>
               <script>
-                // This runs right after the DOM is parsed
-                const observer = new MutationObserver((mutations) => {
-                  mutations.forEach((mutation) => {
-                    console.log('[MutationObserver]', mutation);
-                  });
-                });
-                
-                observer.observe(document.documentElement, {
-                  childList: true,
-                  subtree: true,
-                });
-                
-                console.log("rendering iframe")
                 document.addEventListener("DOMContentLoaded", () => {
                   console.log("dom content loaded")
                   window.morphdomReady = false;
@@ -190,7 +177,7 @@ export const Preview = ({
                     document.head.appendChild(script);
                   }
                   
-                  loadScript("https://cdn.jsdelivr.net/npm/morphdom/dist/morphdom-umd.min.js", () => {
+                  loadScript("/morphdom-umd.min.js", () => {
                     window.morphdomReady = true;
                   });
                 });
