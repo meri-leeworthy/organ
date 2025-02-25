@@ -314,9 +314,8 @@ export const SelectedFileDisplay = ({
   }
 
   return (
-    <div className="relative flex flex-col items-center justify-center flex-1 h-screen pt-12 min-w-96 bg-zinc-700">
+    <div className="relative z-0 flex flex-col items-center justify-center flex-1 h-screen pt-12 min-w-96 bg-zinc-700">
       <header className="absolute top-0 left-0 right-0 flex items-center w-full h-8 max-w-full px-4 mb-auto overflow-hidden font-mono text-sm font-medium border-b border-black shadow-xl text-zinc-300 bg-zinc-900 text-nowrap text-ellipsis">
-        <SidebarTrigger className="w-6 h-6 mr-2" />
         {file.name}
 
         <a
@@ -328,7 +327,7 @@ export const SelectedFileDisplay = ({
         </a>
         {file.type !== "template" && (
           <Button
-            className={`font-sans h-6 px-2 mr-2 ml-2 border border-green-400 text-zinc-200 hover:text-zinc-900 hover:bg-green-400 ${
+            className={`font-sans h-6 px-2 mr-2 ml-2 border rounded-xl border-green-400 hover:text-white text-zinc-900 bg-green-400 ${
               publishLoading ? "bg-green-500 text-zinc-900 animate-pulse" : ""
             }`}
             onClick={handlePublishFile}>
@@ -339,7 +338,7 @@ export const SelectedFileDisplay = ({
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="w-6 h-6">
+          className="w-6 h-6 rounded-full">
           <X />
         </Button>
       </header>

@@ -1,6 +1,6 @@
 ---
 import { Button } from '@/components/ui/button'
-import { Faq } from '@/components/FAQ'
+import { Faq } from '@/components/Faq'
 import '@/styles/globals.css'
 ---
 
@@ -10,35 +10,35 @@ import '@/styles/globals.css'
   <meta charset="UTF-8">
   <title>Organ</title>
 </head>
-<body class="flex flex-col">
-  <header class="w-full relative h-[95vh] flex flex-col items-center justify-center">
+<body class="relative flex flex-col">
+  <header class="relative flex flex-col items-center justify-center w-full h-screen -mt-16">
     <img src="/splotch.svg" class="absolute inset-auto h-4/5 blur-[200px]" />
-    <h1 class="relative z-10 font-black text-8xl right-40">organ</h1>
-    <div class="relative z-10 flex flex-col gap-3 text-2xl font-medium left-24 top-10">
-      <p>pages, online in seconds.</p>
-      <p>post. done.</p>
+    <h1 class="relative z-10 font-black text-8xl right-40 top-20">organ</h1>
+    <div class="relative z-10 flex flex-col gap-3 text-2xl font-medium left-24 top-24">
+      <p><span class="relative px-2 py-0 ml-2 font-bold text-black underline decoration-fuchsia-400 decoration-2">pages,</span> online in seconds.</p>
+      <p><span class="relative px-2 py-0 ml-6 font-bold text-black underline decoration-fuchsia-400 decoration-2">content,</span> managed.</p>
+      <p><span class="relative px-2 py-0 ml-0 font-bold text-black underline decoration-fuchsia-400 decoration-2">post,</span> done.</p>
     </div>
   </header>
-  <main class="flex flex-col w-full -mt-16">
+  <main class="flex flex-col w-full -mt-4">
   <section class="flex flex-col items-center justify-center w-full gap-12 mx-auto mb-16">
-    <p class="text-4xl font-light w-[28rem]"><b class="font-black">Organ</b> is a platform for easily creating and publishing websites, blogs, portfolios, and more.</p>
-    <p class="text-2xl font-light w-[40rem]">Unlike most website builders, Organ generates web pages from your content completely in your browser and uploads them directly to the web.</p>
-    <p class="text-2xl font-light w-[28rem]">This gives you <strong class="font-bold">total control</strong> over your data and allows you to publish your pages online in seconds at a much lower cost than other platforms.</p>
+    <p class="text-4xl font-light w-[28rem]"><b class="font-black">organ</b> is a platform for easily creating and publishing websites, blogs, portfolios, and more.</p>
+    <p class="text-2xl font-light w-[40rem]">Data lives on your computer. Uploading is optional, giving you <strong class="font-bold">total control</strong> over your content.</p>
   </section>
-  <h2 class="self-center mb-6 text-4xl font-medium">Pricing</h2>
+  <h2 class="self-center invisible mb-6 text-4xl font-medium">Pricing</h2>
   <section class="flex gap-4 p-4 mx-auto mb-16 h-[30rem]">
     <div class="flex flex-col h-full gap-4 p-4 transition-all duration-300 bg-gray-100 border w-80 rounded-3xl hover:shadow-xl">
-      <h3 class="text-2xl font-medium">Free</h3>
+      <h3 class="text-2xl font-bold">Free</h3>
       <p class="text-2xl font-light">Try out the basic features.</p>
       <ul class="text-lg font-light list-disc list-inside">
         <li>Create pages and posts</li>
         <li>20MB storage</li>
         <li>HTTPS</li>
       </ul>
-      <Button className="text-2xl font-regular mt-auto h-12">Get Started</Button>
+      <a href="https://pages.organ.is" class="w-full mt-auto"><Button className="w-full text-2xl h-12 font-regular font-bold">Get Started</Button></a>
     </div>
     <div class="flex flex-col h-full gap-4 p-4 transition-all duration-300 bg-gray-100 border w-80 rounded-3xl hover:shadow-xl">
-      <h3 class="text-2xl font-medium">Personal</h3>
+      <h3 class="text-2xl font-bold">Personal</h3>
       <p class="text-2xl font-light">For blogs, portfolios, and more.</p>
       <ul class="text-lg font-light list-disc list-inside">
         <li>Custom Domains</li>
@@ -46,15 +46,18 @@ import '@/styles/globals.css'
         <li>Support via email</li>
         <li>Early access to new features</li>
       </ul>
-      <p class="text-sm font-light">Introductory price:</p>
+      <p class="mt-2 -mb-2 text-sm">Introductory price:</p>
       <p class="font-light"><b class="pr-2 text-4xl font-bold">$5</b>/ month</p>
-      <Button className="text-2xl font-regular mt-auto bg-green-600 h-12">Sign Up</Button>
+      <Button className="text-2xl font-regular mt-auto font-bold bg-green-600 h-12">Sign Up</Button>
     </div>
   </section>
   <section class="flex flex-col items-center justify-center w-full max-w-lg gap-12 mx-auto mb-16">
-    <h2 class="text-4xl font-medium">FAQ</h2>
+    <h2 class="invisible text-4xl font-medium">FAQ</h2>
     <Faq client:load />
   </section>
+  <footer class="flex flex-col items-center justify-center w-full h-16 my-16">
+    <p><b class="text-black">organ</b> is an <a href="https://github.com/meri-leeworthy/organ" class="underline decoration-fuchsia-400 decoration-2">open source</a> project by <a href="https://meri.garden" class="underline decoration-fuchsia-400 decoration-2">Meri</a>, coded on Wurundjeri land.</p>
+  </footer>
   </main>
 </body>
 </html>

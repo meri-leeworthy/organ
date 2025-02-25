@@ -55,7 +55,7 @@ export function NavUser() {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+                  className="rounded-full data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
                   <Avatar className="w-8 h-8 rounded-lg ">
                     <AvatarFallback className="rounded-lg bg-zinc-700">
                       ?
@@ -105,7 +105,7 @@ export function NavUser() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-zinc-900 data-[state=open]:text-zinc-100 hover:bg-zinc-900 hover:text-zinc-100">
+              className="rounded-xl data-[state=open]:bg-zinc-900 data-[state=open]:text-zinc-100 hover:bg-zinc-900 hover:text-zinc-100">
               <Avatar className="w-8 h-8 rounded-lg ">
                 {/* <AvatarImage src={user?.avatar} alt={user?.name} /> */}
                 <AvatarFallback className="rounded-lg bg-zinc-700">
@@ -114,7 +114,7 @@ export function NavUser() {
               </Avatar>
               <div className="grid flex-1 text-sm leading-tight text-left">
                 <span className="font-semibold truncate">
-                  {user?.metadata?.name}
+                  Untitled Project{/* {user?.metadata?.name} */}
                 </span>
                 <span className="text-xs truncate">{user?.email}</span>
               </div>
@@ -135,10 +135,7 @@ export function NavUser() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-sm leading-tight text-left">
-                  <span className="font-semibold truncate">
-                    {user?.metadata?.name}
-                  </span>
-                  <span className="text-xs truncate">{user?.email}</span>
+                  <span className="truncate">{user?.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

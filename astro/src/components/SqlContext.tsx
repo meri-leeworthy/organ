@@ -62,7 +62,7 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
     if (!sql.loading && !sql.error && sql.execute && !schemaInitialized) {
       const initializeSchemaAndData = () => {
         const queries = [
-          // Create the 'models' table
+          // Create the 'model' table
           {
             query: `CREATE TABLE IF NOT EXISTS model (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -214,7 +214,7 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
 
   if (sql.loading || (!schemaInitialized && !schemaError)) {
     return (
-      <div className="flex items-center justify-center w-screen h-screen gap-2 bg-zinc-950">
+      <div className="flex items-center justify-center w-screen h-screen gap-2 bg-zinc-800">
         <Alert className="w-64">Loading database...</Alert>
       </div>
     )
@@ -222,7 +222,7 @@ export const SqlProvider: React.FC<SqlProviderProps> = ({ children }) => {
 
   if (sql.error || schemaError) {
     return (
-      <div className="flex items-center justify-center w-screen h-screen gap-2 bg-zinc-950">
+      <div className="flex items-center justify-center w-screen h-screen gap-2 bg-zinc-800">
         <Alert variant="destructive" className="w-64">
           Error initializing database:{" "}
           {sql.error?.message || schemaError?.message}

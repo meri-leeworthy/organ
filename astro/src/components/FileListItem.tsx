@@ -138,7 +138,7 @@ export function FileListItem({
   return (
     <DropdownMenu key={file.id}>
       <li
-        className={`group/file flex cursor-pointer items-center gap-2 rounded p-1 ${
+        className={`group/file flex cursor-pointer items-center gap-2 rounded-lg p-1 ${
           selectedFiles.activeFileId === file.id
             ? "bg-zinc-900"
             : "hover:bg-zinc-900/50"

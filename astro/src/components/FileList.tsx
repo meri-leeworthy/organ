@@ -182,7 +182,7 @@ export function FileList({
             {heading}
           </CollapsibleTrigger>
         </SidebarGroupLabel>
-        <SidebarGroupAction title={"Add " + type}>
+        <SidebarGroupAction title={"Add " + type} className="rounded-lg">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Plus className="w-4 h-4" />

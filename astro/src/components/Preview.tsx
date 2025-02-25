@@ -83,13 +83,14 @@ export const Preview = ({
         }
       } catch (e) {
         console.error("Error during conversion:", e)
-        // setPreviewContent("")
       }
     }
     const delayedHandleRender = () => setTimeout(handleRender, 50)
 
     window.addEventListener("keydown", delayedHandleRender)
     window.addEventListener("click", delayedHandleRender)
+
+    delayedHandleRender()
 
     // Clean up the event listener on component unmount
     return () => {
@@ -209,6 +210,7 @@ export const Preview = ({
                     });
                     } else if (event.data.type === "initialize") {
                       window.morphdomReady = true;
+                      console.log("morphdom ready")
                     }
                   } catch (e) {
                     console.error("Error during message", e)
